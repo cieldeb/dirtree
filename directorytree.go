@@ -11,54 +11,59 @@ import (
 	"strings"
 )
 
-// https://stackoverflow.com/questions/27775376/value-receiver-vs-pointer-receiver
-
 // Tree represents a directory tree generator
 type Tree struct {
-	inputPath          string
-	outputPath         string
-	terminalTree       bool
-	txtTree            bool
-	jsonTree           bool
-	annotateTree       bool
-	density            int
-	annotationsPadding int
-	excluded           []string
+	inputPath       string
+	outputPath      string
+	terminalTree    bool
+	txtTree         bool
+	jsonTree        bool
+	density         int
+	excluded        []string
+	connSetSelector int
+	filesFirst      bool
+	hiddenFiles     bool
+	alphabetic      bool
+	connectors      connectorSet
 
 	// Internal fields
-	visualTree bool
-	// metadataFields  []string
-	imagesMetadata  map[string][]string
-	annotated       []string
-	jsonStructure   map[string]interface{}
+	visualTree      bool
+	jsonStructure   map[string]any
+	prefix          string
 	visualStructure strings.Builder
 	maxLineLength   int
-	elementIsDir    bool
 	depth           int
+	elementIsDir    bool
+}
+
+// Base connector set structure for use in the program
+type connectorSet struct {
+	branch     string
+	leaf       string
+	horizontal string
+	vertical   string
 }
 
 // NewTree creates a new Tree instance
-func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, annotateTree bool, density, annotationsPadding int) *Tree {
+func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, annotateTree bool, density, annotationsPadding, connSetSelector int, filesFirst bool, hiddenFiles bool, alphabetic bool,
+) *Tree {
 	t := &Tree{
-		inputPath:          inputPath,
-		outputPath:         outputPath,
-		terminalTree:       terminalTree,
-		txtTree:            txtTree,
-		jsonTree:           jsonTree,
-		annotateTree:       annotateTree,
-		density:            density,
-		annotationsPadding: annotationsPadding,
-		imagesMetadata:     make(map[string][]string),
-		maxLineLength:      0,
-		depth:              0,
+		inputPath:       inputPath,
+		outputPath:      outputPath,
+		terminalTree:    terminalTree,
+		txtTree:         txtTree,
+		jsonTree:        jsonTree,
+		density:         density,
+		connSetSelector: connSetSelector,
+		filesFirst:      filesFirst,
+		hiddenFiles:     hiddenFiles,
+		alphabetic:      alphabetic,
+		maxLineLength:   0,
+		depth:           0,
 	}
 
 	if t.outputPath == "" {
 		t.outputPath = filepath.Join(t.inputPath, "tree")
-	}
-
-	if t.annotateTree {
-		t.annotated = []string{"tags"}
 	}
 
 	// Get excluded folders from user input
@@ -79,13 +84,46 @@ func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, anno
 		// Initialize the visual structure buffer
 		t.visualTree = true
 		t.visualStructure.Grow(4096)
+		t.prefix = ""
+
+		switch t.connSetSelector {
+		case 1:
+			t.connectors = connectorSet{
+				branch:     "\u251C", // ├ (box drawings light vertical and right)
+				leaf:       "\u2514", // └ (box drawings light up and right)
+				horizontal: "\u2500", // ─ (box drawings light horizontal)
+				vertical:   "\u2502", // │ (box drawings light vertical)
+			}
+		case 2:
+			t.connectors = connectorSet{
+				branch:     "+",
+				leaf:       "`",
+				horizontal: "-",
+				vertical:   "|",
+			}
+		case 3:
+			t.connectors = connectorSet{
+				branch:     "|",
+				leaf:       "|",
+				horizontal: "_",
+				vertical:   "|",
+			}
+		default:
+			// Default to case 2 if invalid selector
+			t.connectors = connectorSet{
+				branch:     "+",
+				leaf:       "+",
+				horizontal: "-",
+				vertical:   "|",
+			}
+		}
 	}
 
 	t.generate()
 	return t
 }
 
-// generate builds the tree, annotates it, and writes data to output files
+// generate builds the tree writes data to the desired output(s)
 func (t *Tree) generate() {
 	if t.jsonTree {
 		t.jsonStructure = t.traverseTree(t.inputPath)
@@ -93,15 +131,12 @@ func (t *Tree) generate() {
 		t.traverseTree(t.inputPath)
 	}
 
-	// Annotate the tree
-	//if t.annotateTree {
-	//	t.annotate()
-	//}
-
-	// Ensure output directory exists
-	if err := os.MkdirAll(t.outputPath, 0755); err != nil {
-		fmt.Printf("Error creating output directory: %v\n", err)
-		return
+	if t.jsonTree || t.txtTree {
+		// Ensure output directory exists
+		if err := os.MkdirAll(t.outputPath, 0755); err != nil {
+			fmt.Printf("Error creating output directory: %v\n", err)
+			return
+		}
 	}
 
 	// Write visual tree
@@ -142,23 +177,44 @@ func (t *Tree) traverseTree(dirPath string) map[string]any {
 		return directoryTree
 	}
 
-	// Sort entries
+	// Filter hidden files in place
+	n := 0
+	for _, entry := range entries {
+		if !t.hiddenFiles && entry.Name()[0] == '.' {
+			continue
+		}
+		entries[n] = entry
+		n++
+	}
+	entries = entries[:n]
+
+	// Sort the filtered entries
 	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Name() < entries[j].Name()
+		if entries[i].IsDir() == entries[j].IsDir() {
+			if t.alphabetic {
+				return entries[i].Name() < entries[j].Name()
+			} else {
+				return entries[i].Name() > entries[j].Name()
+			}
+		}
+		if t.filesFirst {
+			return !entries[i].IsDir() && entries[j].IsDir()
+		} else {
+			return entries[i].IsDir() && !entries[j].IsDir()
+		}
 	})
 
-	for _, entry := range entries {
+	for idx, entry := range entries {
 		fullPath := filepath.Join(dirPath, entry.Name())
-		var baseName string
+		isLast := idx == len(entries)-1
 
 		if entry.IsDir() {
-			baseName = entry.Name()
+			baseName := entry.Name()
 
 			// Check if excluded
 			if slices.Contains(t.excluded, baseName) {
-				fmt.Printf("Skipping excluded : %s\n", baseName)
+				fmt.Printf("Skipping excluded: %s\n", baseName)
 				if t.jsonTree {
-					// Count subdirectories and files
 					subEntries, _ := os.ReadDir(fullPath)
 					dirs := 0
 					files := 0
@@ -182,12 +238,36 @@ func (t *Tree) traverseTree(dirPath string) map[string]any {
 				continue
 			}
 
+			// Check if directory contains only hidden files
+			subEntries, err := os.ReadDir(fullPath)
+			if err != nil {
+				fmt.Printf("Error reading subdirectory %s: %v\n", fullPath, err)
+				continue
+			}
+
+			// Count non-hidden entries
+			nonHiddenCount := 0
+			for _, subEntry := range subEntries {
+				if t.hiddenFiles || subEntry.Name()[0] != '.' {
+					nonHiddenCount++
+				}
+			}
+
+			// Skip directory if it contains only hidden files and hiddenFiles is false
+			if !t.hiddenFiles && nonHiddenCount == 0 {
+				continue
+			}
+
 			// Process directory
 			t.elementIsDir = true
-			t.createTreeLine(fullPath)
+			t.createTreeLine(fullPath, isLast)
 
 			if t.visualTree {
-				t.depth++
+				if isLast {
+					t.prefix += "    "
+				} else {
+					t.prefix += t.connectors.vertical + "   "
+				}
 			}
 
 			subtree := t.traverseTree(fullPath)
@@ -197,17 +277,20 @@ func (t *Tree) traverseTree(dirPath string) map[string]any {
 			}
 
 			if t.visualTree {
-				t.depth--
+				if len(t.prefix) >= 4 {
+					t.prefix = t.prefix[:len(t.prefix)-4]
+				}
 			}
 		} else {
-			// Process file
+			if !t.hiddenFiles && entry.Name()[0] == '.' {
+				continue
+			}
 			t.elementIsDir = false
-			t.createTreeLine(fullPath)
+			t.createTreeLine(fullPath, isLast)
 
 			if t.jsonTree {
 				ext := strings.ToLower(filepath.Ext(entry.Name()))
 				if ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
-					// Image file - could gather metadata here
 					directoryTree[entry.Name()] = map[string]string{
 						entry.Name(): entry.Name() + "_data",
 					}
@@ -221,45 +304,28 @@ func (t *Tree) traverseTree(dirPath string) map[string]any {
 	return directoryTree
 }
 
-// annotate adds annotations to the visual tree
-//func (t *Tree) annotate() {
-//	for i, line := range t.blip {
-//		parts := strings.Split(line, " ")
-//		fileName := parts[len(parts)-1]
-//
-//		if tags, exists := t.imagesMetadata[fileName]; exists {
-//			tagsText := strings.Join(tags, ", ")
-//			padding := t.maxLineLength - len(line)
-//			if padding < 0 {
-//				padding = 0
-//			}
-//			spaces := strings.Repeat(" ", padding) + strings.Repeat("  ", t.annotationsPadding)
-//			t.blip[i] = line + spaces + tagsText
-//		}
-//	}
-//}
-
 // createTreeLine constructs a line for the tree
-func (t *Tree) createTreeLine(path string) {
+func (t *Tree) createTreeLine(path string, isLast bool) {
 	dirSuffix := ""
 	if t.elementIsDir {
 		dirSuffix = "/"
 	}
 
-	lineStr := fmt.Sprintf("%s %s%s%s",
-		strings.Repeat("|"+strings.Repeat(" ", t.density), t.depth)+"|"+strings.Repeat("_", t.density),
+	// Choose the correct connector based on whether this is the last item
+	connector := t.connectors.branch
+	if isLast {
+		connector = t.connectors.leaf
+	}
+
+	lineStr := fmt.Sprintf("%s%s%s %s%s",
+		t.prefix,
+		connector,
+		strings.Repeat(t.connectors.horizontal, t.density),
 		filepath.Base(path),
 		dirSuffix,
-		strings.Repeat("  ", t.annotationsPadding),
 	)
 
 	if t.visualTree {
 		t.visualStructure.WriteString(lineStr + "\n")
-		if t.annotateTree {
-			lineLen := len(lineStr)
-			if lineLen > t.maxLineLength {
-				t.maxLineLength = lineLen
-			}
-		}
 	}
 }

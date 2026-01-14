@@ -2,42 +2,131 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
+	"os"
 )
+
+var programName string = "dirtree"
+
+var defaultConfig string = `# Dirtree Configuration
+jsonTree: false
+txtTree: true
+terminalTree: false
+annotateTree: false
+density: 3
+annotationsPadding: 3
+filesFirst: true
+hiddenFiles: false
+alphabetic: true
+connSetSelector: 2
+`
 
 var (
 	jsonTree     bool
 	txtTree      bool
 	terminalTree bool
 	annotateTree bool
+	verbose      bool
+	saveConf     bool
+	displayConf  bool
+	filesFirst   bool
+	hiddenFiles  bool
+	alphabetic   bool
 )
 
 var (
-	inputPath  string
 	outputPath string
 )
 
 var (
 	density            int
 	annotationsPadding int
+	connSetSelector    int
+)
+
+var (
+	infoLog    *log.Logger
+	debugLog   *log.Logger
+	warningLog *log.Logger
+	errorLog   *log.Logger
 )
 
 func init() {
-	flag.BoolVar(&jsonTree, "json", false, "Set true to output the tree as JSON")
-	flag.BoolVar(&txtTree, "txt", true, "Set true to output the tree in a text file")
-	flag.BoolVar(&terminalTree, "terminal", false, "Set true to output the tree to the terminal")
-	flag.BoolVar(&annotateTree, "annotate", false, "Set true to add annotations to the tree")
-	flag.StringVar(&inputPath, "input", ".", "The input directory path")
+	// Initialize loggers with different prefixes and flags
+	infoLog = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime)
+	debugLog = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime)
+	warningLog = log.New(os.Stdout, "WARNING: ", log.Ldate|log.Ltime)
+	errorLog = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+
+	config, err := loadConfig(programName, defaultConfig)
+	if err != nil {
+		warningLog.Printf("Could not load config: %v", err)
+		config = &Config{}
+	}
+
+	flag.BoolVar(&jsonTree, "json", config.JsonTree, "Set true to output the tree as JSON")
+	flag.BoolVar(&txtTree, "txt", config.TxtTree, "Set true to output the tree in a text file")
+	flag.BoolVar(&terminalTree, "terminal", config.TerminalTree, "Set true to output the tree to the terminal")
+	flag.BoolVar(&annotateTree, "annotate", config.AnnotateTree, "Set true to add annotations to the tree")
 	flag.StringVar(&outputPath, "output", "", "The output directory path")
-	flag.IntVar(&density, "density", 3, "The tree density, 1 is dense, 5 is spacious")
-	flag.IntVar(&annotationsPadding, "annotationspadding", 3, "The padding between annotations fields")
+	flag.IntVar(&density, "density", config.Density, "The tree density, 1 is dense, 5 is spacious")
+	flag.IntVar(&annotationsPadding, "annotationspadding", config.AnnotationsPadding, "The padding between annotations fields")
+	flag.BoolVar(&filesFirst, "filesfirst", config.FilesFirst, "List files before directories")
+	flag.BoolVar(&hiddenFiles, "hiddenfiles", config.HiddenFiles, "Add hidden files to the tree")
+	flag.BoolVar(&alphabetic, "alphabetic", config.Alphabetic, "Sort entries alphabetically")
+	flag.IntVar(&connSetSelector, "connectorset", config.ConnSetSelector, "The connector set among \"└├│─\"(1), \"+|-\"(2) and \"|_/\"(3)")
+
+	// Config independent parameters
+	flag.BoolVar(&verbose, "verbose", false, "Verbosity of the output")
+	flag.BoolVar(&saveConf, "saveconf", false, "Save current flag values to config file")
+	flag.BoolVar(&displayConf, "displayconf", false, "Display the current configuration in the terminal")
 }
 
 func main() {
 	flag.Parse()
+
+	// Get inputPath as a positional argument
+	inputPath := flag.Args()[0]
 	if inputPath == "" {
-		log.Fatal("Please provide a directory to explore as argument")
+		errorLog.Fatal("Please provide a directory to explore as argument")
 	}
+
+	// Configure verbose logging output
+	if !verbose {
+		debugLog.SetOutput(io.Discard)
+	}
+
+	// Display config if requested
+	if displayConf {
+		infoLog.Printf(`jsonTree %t
+		txtTree %t
+		terminalTree %t
+		annotateTree %t
+		density %d
+		annotationsPadding %d,
+		filesFirst %t,
+		hiddenFiles %t,
+		alphabetic %t,
+		connSetSelector %d`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connSetSelector)
+	}
+
+	// Save config if requested
+	if saveConf {
+		newConfig := &Config{
+			JsonTree:           jsonTree,
+			TxtTree:            txtTree,
+			TerminalTree:       terminalTree,
+			AnnotateTree:       annotateTree,
+			Density:            density,
+			AnnotationsPadding: annotationsPadding,
+		}
+		if err := saveConfig(newConfig, programName); err != nil {
+			errorLog.Fatalf("Error saving config: %s", err)
+		}
+		infoLog.Println("Configuration saved successfully")
+	}
+
 	tree := NewTree(
 		inputPath,
 		outputPath,
@@ -47,6 +136,10 @@ func main() {
 		annotateTree,
 		density,
 		annotationsPadding,
+		connSetSelector,
+		filesFirst,
+		hiddenFiles,
+		alphabetic,
 	)
 	_ = tree
 }
