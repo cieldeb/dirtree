@@ -33,6 +33,7 @@ var (
 	filesFirst   bool
 	hiddenFiles  bool
 	alphabetic   bool
+	unrestricted bool
 )
 
 var (
@@ -78,8 +79,9 @@ func init() {
 	flag.IntVar(&connSetSelector, "connectorset", config.ConnSetSelector, "The connector set among \"└├│─\"(1), \"+|-\"(2) and \"|_/\"(3)")
 
 	// Config independent parameters
-	flag.BoolVar(&verbose, "verbose", false, "Verbosity of the output")
-	flag.BoolVar(&saveConf, "saveconf", false, "Save current flag values to config file")
+	flag.BoolVar(&verbose, "verbose", false, "Add debug prints to the output")
+	flag.BoolVar(&unrestricted, "unrestricted", false, "Bypass restrictions on nesting depth and output length. Things might break !")
+	flag.BoolVar(&saveConf, "saveconf", false, "Save current flag values to the configuration file")
 	flag.BoolVar(&displayConf, "displayconf", false, "Display the current configuration in the terminal")
 }
 
@@ -130,6 +132,14 @@ func main() {
 			errorLog.Fatalf("Error saving config: %s", err)
 		}
 		infoLog.Println("Configuration saved successfully")
+	}
+
+	// Warning the user when working in unrestricted mode
+	if unrestricted {
+		infoLog.Println("Unrestricted is set to true. If you continue, the output might be very long and the memory usage heavy. Press ctrl+c to abort or Enter to continue")
+		fmt.Scanln()
+		maxDepth = 100000
+		maxElements = 100000
 	}
 
 	tree := NewTree(
