@@ -89,7 +89,12 @@ func main() {
 	// Get inputPath as a positional argument
 	inputPath := flag.Args()[0]
 	if inputPath == "" {
-		errorLog.Fatal("Please provide a directory to explore as argument")
+		if displayConf {
+			displayConfiguration()
+			return
+		} else {
+			errorLog.Fatal("Please provide a directory to explore as argument")
+		}
 	}
 
 	// Configure verbose logging output
@@ -142,4 +147,19 @@ func main() {
 		alphabetic,
 	)
 	_ = tree
+}
+
+// displayConfiguration in the terminal
+func displayConfiguration() {
+	infoLog.Printf(`jsonTree %t
+		txtTree %t
+		terminalTree %t
+		annotateTree %t
+		density %d
+		annotationsPadding %d,
+		filesFirst %t,
+		hiddenFiles %t,
+		alphabetic %t,
+		connSetSelector %d
+		maxDepth %d`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connSetSelector, maxDepth)
 }
