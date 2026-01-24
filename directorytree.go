@@ -382,7 +382,10 @@ func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx in
 	}
 
 	if startidx != 0 {
-		fmt.Fprintf(&b, " not shown, full directory path : %s", dirPath)
+		fmt.Fprint(&b, " not shown")
+		if t.depth != 0 {
+			fmt.Fprintf(&b, ", full directory path : %s", dirPath)
+		}
 	}
 
 	return b.String()
