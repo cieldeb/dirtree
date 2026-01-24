@@ -50,16 +50,16 @@ func createTestDir(t *testing.T) string {
 	return tmpDir
 }
 
-func TestConnectorSet(t *testing.T) {
+func TestConnectors(t *testing.T) {
 	tests := []struct {
 		name     string
 		selector int
-		expected connectorSet
+		expected connectors
 	}{
 		{
 			name:     "Unicode connectors",
 			selector: 1,
-			expected: connectorSet{
+			expected: connectors{
 				branch:     "\u251C",
 				leaf:       "\u2514",
 				horizontal: "\u2500",
@@ -69,7 +69,7 @@ func TestConnectorSet(t *testing.T) {
 		{
 			name:     "ASCII connectors",
 			selector: 2,
-			expected: connectorSet{
+			expected: connectors{
 				branch:     "+",
 				leaf:       "`",
 				horizontal: "-",
@@ -79,7 +79,7 @@ func TestConnectorSet(t *testing.T) {
 		{
 			name:     "Alternative connectors",
 			selector: 3,
-			expected: connectorSet{
+			expected: connectors{
 				branch:     "|",
 				leaf:       "|",
 				horizontal: "_",
@@ -89,7 +89,7 @@ func TestConnectorSet(t *testing.T) {
 		{
 			name:     "Invalid selector defaults to ASCII",
 			selector: 99,
-			expected: connectorSet{
+			expected: connectors{
 				branch:     "+",
 				leaf:       "+",
 				horizontal: "-",
@@ -114,16 +114,16 @@ func TestConnectorSet(t *testing.T) {
 			defer func() { os.Stdin = oldStdin }()
 
 			tree := &Tree{
-				inputPath:       tmpDir,
-				outputPath:      outputDir,
-				terminalTree:    false,
-				txtTree:         true,
-				jsonTree:        false,
-				density:         3,
-				connSetSelector: tt.selector,
-				filesFirst:      false,
-				hiddenFiles:     false,
-				alphabetic:      true,
+				inputPath:    tmpDir,
+				outputPath:   outputDir,
+				terminalTree: false,
+				txtTree:      true,
+				jsonTree:     false,
+				density:      3,
+				connectorSet: tt.selector,
+				filesFirst:   false,
+				hiddenFiles:  false,
+				alphabetic:   true,
 			}
 
 			tree.visualTree = true
@@ -133,28 +133,28 @@ func TestConnectorSet(t *testing.T) {
 			// Set connectors manually based on selector (mimics NewTree logic)
 			switch tt.selector {
 			case 1:
-				tree.connectors = connectorSet{
+				tree.connectors = connectors{
 					branch:     "\u251C",
 					leaf:       "\u2514",
 					horizontal: "\u2500",
 					vertical:   "\u2502",
 				}
 			case 2:
-				tree.connectors = connectorSet{
+				tree.connectors = connectors{
 					branch:     "+",
 					leaf:       "`",
 					horizontal: "-",
 					vertical:   "|",
 				}
 			case 3:
-				tree.connectors = connectorSet{
+				tree.connectors = connectors{
 					branch:     "|",
 					leaf:       "|",
 					horizontal: "_",
 					vertical:   "|",
 				}
 			default:
-				tree.connectors = connectorSet{
+				tree.connectors = connectors{
 					branch:     "+",
 					leaf:       "+",
 					horizontal: "-",
@@ -187,7 +187,7 @@ func TestTreeGeneration_TxtOutput(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20)
 
 	// Check if output file was created
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -231,7 +231,7 @@ func TestTreeGeneration_JSONOutput(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, false, true, false, 3, 3, 2, false, false, true)
+	NewTree(tmpDir, outputDir, false, false, true, false, 3, 3, 2, false, false, true, 10, 20)
 
 	// Check if output file was created
 	jsonFile := filepath.Join(outputDir, "tree.json")
@@ -275,7 +275,7 @@ func TestTreeGeneration_WithHiddenFiles(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	// Generate with hidden files enabled
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, true, true)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, true, true, 10, 20)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -311,7 +311,7 @@ func TestTreeGeneration_FilesFirst(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	// Generate with filesFirst enabled
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, true, false, true)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, true, false, true, 10, 20)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -359,7 +359,7 @@ func TestTreeGeneration_ExcludedFolders(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -411,7 +411,7 @@ func TestTreeGeneration_DensityLevels(t *testing.T) {
 			w.Close()
 			defer func() { os.Stdin = oldStdin }()
 
-			NewTree(tmpDir, outputDir, false, true, false, false, tt.density, 3, 2, false, false, true)
+			NewTree(tmpDir, outputDir, false, true, false, false, tt.density, 3, 2, false, false, true, 10, 20)
 
 			// Read tree.txt
 			treeFile := filepath.Join(outputDir, "tree.txt")
@@ -458,7 +458,7 @@ func TestTreeGeneration_AlphabeticSorting(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -491,7 +491,7 @@ func TestTreeGeneration_AlphabeticSorting(t *testing.T) {
 func TestCreateTreeLine(t *testing.T) {
 	tree := &Tree{
 		density: 3,
-		connectors: connectorSet{
+		connectors: connectors{
 			branch:     "+",
 			leaf:       "`",
 			horizontal: "-",
@@ -547,7 +547,7 @@ func TestDefaultOutputPath(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	// Pass empty output path
-	NewTree(tmpDir, "", false, true, false, false, 3, 3, 2, false, false, true)
+	NewTree(tmpDir, "", false, true, false, false, 3, 3, 2, false, false, true, 10, 20)
 
 	// Check if output was created in default location (inputPath/tree)
 	defaultOutputDir := filepath.Join(tmpDir, "tree")

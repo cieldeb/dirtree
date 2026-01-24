@@ -16,9 +16,11 @@ type Config struct {
 	Density            int  `mapstructure:"density"`
 	AnnotationsPadding int  `mapstructure:"annotationsPadding"`
 	FilesFirst         bool `mapstructure:"filesFirst"`
-	HiddenFiles	bool `mapstructure:"hiddenFiles"`
-	Alphabetic bool `mapstructure:"alphabetic"`
-	ConnSetSelector int `mapstructure:"connectorSetSelector"`
+	HiddenFiles        bool `mapstructure:"hiddenFiles"`
+	Alphabetic         bool `mapstructure:"alphabetic"`
+	ConnectorSet       int  `mapstructure:"connectorSet"`
+	MaxDepth           int  `mapstructure:"maxDepth"`
+	MaxElements        int  `mapstructure:"maxElements"`
 }
 
 func loadConfig(programName, defaultConfig string) (*Config, error) {
@@ -48,8 +50,9 @@ func loadConfig(programName, defaultConfig string) (*Config, error) {
 	viper.SetDefault("filesFirst", true)
 	viper.SetDefault("hiddenFiles", false)
 	viper.SetDefault("alphabetic", true)
-	viper.SetDefault("connSetSelector", 2)
-
+	viper.SetDefault("connectorSet", 2)
+	viper.SetDefault("maxDepth", 10)
+	viper.SetDefault("maxElements", 20)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -78,7 +81,9 @@ func saveConfig(config *Config, programName string) error {
 	viper.Set("filesFirst", config.FilesFirst)
 	viper.Set("hiddenFiles", config.HiddenFiles)
 	viper.Set("alphabetic", config.Alphabetic)
-	viper.Set("connectorSet", config.ConnSetSelector)
+	viper.Set("connectorSet", config.ConnectorSet)
+	viper.Set("maxDepth", config.MaxDepth)
+	viper.Set("maxElements", config.MaxElements)
 
 	if err := viper.WriteConfigAs(configFile); err != nil {
 		return fmt.Errorf("error writing config file: %w", err)

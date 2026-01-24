@@ -13,18 +13,18 @@ import (
 
 // Tree represents a directory tree generator
 type Tree struct {
-	inputPath       string
-	outputPath      string
-	terminalTree    bool
-	txtTree         bool
-	jsonTree        bool
-	density         int
-	excluded        []string
-	connSetSelector int
-	filesFirst      bool
-	hiddenFiles     bool
-	alphabetic      bool
-	connectors      connectorSet
+	inputPath    string
+	outputPath   string
+	terminalTree bool
+	txtTree      bool
+	jsonTree     bool
+	density      int
+	excluded     []string
+	connectorSet int
+	filesFirst   bool
+	hiddenFiles  bool
+	alphabetic   bool
+	connectors   connectors
 
 	// Internal fields
 	visualTree      bool
@@ -37,7 +37,7 @@ type Tree struct {
 }
 
 // Base connector set structure for use in the program
-type connectorSet struct {
+type connectors struct {
 	branch     string
 	leaf       string
 	horizontal string
@@ -45,25 +45,24 @@ type connectorSet struct {
 }
 
 // NewTree creates a new Tree instance
-func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, annotateTree bool, density, annotationsPadding, connSetSelector int, filesFirst bool, hiddenFiles bool, alphabetic bool,
-) *Tree {
+func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, annotateTree bool, density, annotationsPadding, connectorSet int, filesFirst, hiddenFiles, alphabetic bool, maxDepth, maxElements int) *Tree {
 	t := &Tree{
-		inputPath:       inputPath,
-		outputPath:      outputPath,
-		terminalTree:    terminalTree,
-		txtTree:         txtTree,
-		jsonTree:        jsonTree,
-		density:         density,
-		connSetSelector: connSetSelector,
-		filesFirst:      filesFirst,
-		hiddenFiles:     hiddenFiles,
-		alphabetic:      alphabetic,
-		maxLineLength:   0,
-		depth:           0,
+		inputPath:     inputPath,
+		outputPath:    outputPath,
+		terminalTree:  terminalTree,
+		txtTree:       txtTree,
+		jsonTree:      jsonTree,
+		density:       density,
+		connectorSet:  connectorSet,
+		filesFirst:    filesFirst,
+		hiddenFiles:   hiddenFiles,
+		alphabetic:    alphabetic,
+		maxLineLength: 0,
+		depth:         0,
 	}
 
 	if t.outputPath == "" {
-		t.outputPath = filepath.Join(t.inputPath, "tree")
+		t.outputPath = filepath.Join(t.inputPath)
 	}
 
 	// Get excluded folders from user input
@@ -86,23 +85,23 @@ func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, anno
 		t.visualStructure.Grow(4096)
 		t.prefix = ""
 
-		switch t.connSetSelector {
+		switch t.connectorSet {
 		case 1:
-			t.connectors = connectorSet{
-				branch:     "\u251C", // ├ (box drawings light vertical and right)
-				leaf:       "\u2514", // └ (box drawings light up and right)
-				horizontal: "\u2500", // ─ (box drawings light horizontal)
-				vertical:   "\u2502", // │ (box drawings light vertical)
+			t.connectors = connectors{
+				branch:     "├",
+				leaf:       "└",
+				horizontal: "─",
+				vertical:   "│",
 			}
 		case 2:
-			t.connectors = connectorSet{
+			t.connectors = connectors{
 				branch:     "+",
 				leaf:       "`",
 				horizontal: "-",
 				vertical:   "|",
 			}
 		case 3:
-			t.connectors = connectorSet{
+			t.connectors = connectors{
 				branch:     "|",
 				leaf:       "|",
 				horizontal: "_",
@@ -110,7 +109,7 @@ func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, anno
 			}
 		default:
 			// Default to case 2 if invalid selector
-			t.connectors = connectorSet{
+			t.connectors = connectors{
 				branch:     "+",
 				leaf:       "+",
 				horizontal: "-",
@@ -123,20 +122,13 @@ func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, anno
 	return t
 }
 
-// generate builds the tree writes data to the desired output(s)
+// generate builds the tree and writes data to the desired output(s)
 func (t *Tree) generate() {
+	var emptyDir []os.DirEntry
 	if t.jsonTree {
-		t.jsonStructure = t.traverseTree(t.inputPath)
+		t.jsonStructure = t.traverseTree(t.inputPath, &emptyDir, maxDepth, maxElements)
 	} else {
-		t.traverseTree(t.inputPath)
-	}
-
-	if t.jsonTree || t.txtTree {
-		// Ensure output directory exists
-		if err := os.MkdirAll(t.outputPath, 0755); err != nil {
-			fmt.Printf("Error creating output directory: %v\n", err)
-			return
-		}
+		t.traverseTree(t.inputPath, &emptyDir, maxDepth, maxElements)
 	}
 
 	// Write visual tree
@@ -144,12 +136,14 @@ func (t *Tree) generate() {
 		content := t.visualStructure.String()
 		if t.txtTree {
 			treeFile := filepath.Join(t.outputPath, "tree.txt")
-			if err := os.WriteFile(treeFile, []byte(content), 0644); err != nil {
+			// Add UTF-8 BOM
+			contentWithBOM := append([]byte{0xEF, 0xBB, 0xBF}, []byte(content)...)
+			if err := os.WriteFile(treeFile, contentWithBOM, 0644); err != nil {
 				fmt.Printf("Error writing visual tree file: %v\n", err)
 			}
 		}
 		if t.terminalTree {
-			fmt.Println(content)
+			os.Stdout.Write([]byte(content + "\n"))
 		}
 	}
 
@@ -168,88 +162,87 @@ func (t *Tree) generate() {
 }
 
 // traverseTree builds the file tree recursively
-func (t *Tree) traverseTree(dirPath string) map[string]any {
+func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, maxElements int) map[string]any {
 	directoryTree := make(map[string]any)
 
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
-		fmt.Printf("Error reading directory %s: %v\n", dirPath, err)
-		return directoryTree
+	localEntries := *entries
+
+	if len(localEntries) == 0 {
+		readEntries, err := os.ReadDir(dirPath)
+		if err != nil {
+			fmt.Printf("Error reading directory %s: %v\n", dirPath, err)
+			return directoryTree
+		}
+		localEntries = readEntries
 	}
 
 	// Filter hidden files in place
 	n := 0
-	for _, entry := range entries {
+	for _, entry := range localEntries {
 		if !t.hiddenFiles && entry.Name()[0] == '.' {
 			continue
 		}
-		entries[n] = entry
+		localEntries[n] = entry
 		n++
 	}
-	entries = entries[:n]
+	localEntries = localEntries[:n]
 
 	// Sort the filtered entries
-	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].IsDir() == entries[j].IsDir() {
+	sort.Slice(localEntries, func(i, j int) bool {
+		if localEntries[i].IsDir() == localEntries[j].IsDir() {
 			if t.alphabetic {
-				return entries[i].Name() < entries[j].Name()
+				return localEntries[i].Name() < localEntries[j].Name()
 			} else {
-				return entries[i].Name() > entries[j].Name()
+				return localEntries[i].Name() > localEntries[j].Name()
 			}
 		}
 		if t.filesFirst {
-			return !entries[i].IsDir() && entries[j].IsDir()
+			return !localEntries[i].IsDir() && localEntries[j].IsDir()
 		} else {
-			return entries[i].IsDir() && !entries[j].IsDir()
+			return localEntries[i].IsDir() && !localEntries[j].IsDir()
 		}
 	})
 
-	for idx, entry := range entries {
+	for idx, entry := range localEntries {
 		fullPath := filepath.Join(dirPath, entry.Name())
-		isLast := idx == len(entries)-1
+		isLast := idx == len(localEntries)-1
+
+		// If we reach the maximum amount of elements, we create an additional line describing what is left in the directory
+		if idx == maxElements {
+			if t.visualTree {
+				t.visualStructure.WriteString(t.composeSummary(dirPath, localEntries, idx) + "\n")
+			}
+			break
+		}
 
 		if entry.IsDir() {
 			baseName := entry.Name()
 
-			// Check if excluded
-			if slices.Contains(t.excluded, baseName) {
-				fmt.Printf("Skipping excluded: %s\n", baseName)
-				if t.jsonTree {
-					subEntries, _ := os.ReadDir(fullPath)
-					dirs := 0
-					files := 0
-					for _, subEntry := range subEntries {
-						if subEntry.IsDir() {
-							dirs++
-						} else {
-							files++
-						}
-					}
-					dirWord := "y"
-					if dirs > 1 {
-						dirWord = "ies"
-					}
-					fileWord := ""
-					if files != 1 {
-						fileWord = "s"
-					}
-					directoryTree[entry.Name()] = fmt.Sprintf("%d subdirector%s, %d file%s", dirs, dirWord, files, fileWord)
-				}
-				continue
-			}
-
-			// Check if directory contains only hidden files
+			// Reading the entries contained by the folder
 			subEntries, err := os.ReadDir(fullPath)
 			if err != nil {
 				fmt.Printf("Error reading subdirectory %s: %v\n", fullPath, err)
 				continue
 			}
 
-			// Count non-hidden entries
-			nonHiddenCount := 0
-			for _, subEntry := range subEntries {
-				if t.hiddenFiles || subEntry.Name()[0] != '.' {
-					nonHiddenCount++
+			// Check if excluded
+			if slices.Contains(t.excluded, baseName) {
+				fmt.Printf("Skipping excluded: %s\n", baseName)
+				if t.jsonTree {
+					// Default case with 0 start index of entries reading
+					directoryTree[entry.Name()] = t.composeSummary(dirPath, subEntries, 0)
+					continue
+				}
+			}
+
+			// Count specific elements amounts if relevant
+			var nonHiddenCount int
+			if !t.hiddenFiles {
+				for _, subEntry := range subEntries {
+					// Count non-hidden entries
+					if t.hiddenFiles || subEntry.Name()[0] != '.' {
+						nonHiddenCount++
+					}
 				}
 			}
 
@@ -263,22 +256,39 @@ func (t *Tree) traverseTree(dirPath string) map[string]any {
 			t.createTreeLine(fullPath, isLast)
 
 			if t.visualTree {
+				prefixAddition := ""
 				if isLast {
-					t.prefix += "    "
+					prefixAddition = strings.Repeat(" ", t.density)
 				} else {
-					t.prefix += t.connectors.vertical + "   "
+					prefixAddition = t.connectors.vertical + strings.Repeat(" ", t.density)
 				}
-			}
+				t.prefix += prefixAddition
 
-			subtree := t.traverseTree(fullPath)
+				// Checking that we didn't exceed the maximum nesting depth
+				if t.depth <= maxDepth {
+					t.depth += 1
+					subtree := t.traverseTree(fullPath, &subEntries, maxDepth, maxElements)
 
-			if t.jsonTree {
-				directoryTree[entry.Name()] = subtree
-			}
+					if t.jsonTree {
+						directoryTree[entry.Name()] = subtree
+					}
 
-			if t.visualTree {
-				if len(t.prefix) >= 4 {
-					t.prefix = t.prefix[:len(t.prefix)-4]
+					t.depth -= 1
+				}
+
+				// Remove the exact string we added
+				t.prefix = t.prefix[:len(t.prefix)-len(prefixAddition)]
+			} else {
+				// Checking that we didn't exceed the maximum nesting depth
+				if t.depth <= maxDepth {
+					t.depth += 1
+					subtree := t.traverseTree(fullPath, &subEntries, maxDepth, maxElements)
+
+					if t.jsonTree {
+						directoryTree[entry.Name()] = subtree
+					}
+
+					t.depth -= 1
 				}
 			}
 		} else {
@@ -328,4 +338,52 @@ func (t *Tree) createTreeLine(path string, isLast bool) {
 	if t.visualTree {
 		t.visualStructure.WriteString(lineStr + "\n")
 	}
+}
+
+func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx int) string {
+	dirs := 0
+	files := 0
+
+	// Counting remaining files and directories
+	for i := startidx; i < len(entries); i++ {
+		if entries[i].IsDir() {
+			dirs++
+		} else {
+			files++
+		}
+	}
+
+	// Creating and building the string base
+	var b strings.Builder
+	b.WriteString(t.prefix)
+	b.WriteString(t.connectors.leaf)
+	b.WriteString(strings.Repeat(t.connectors.horizontal, t.density))
+	b.WriteString(" ")
+
+	// Create string parts for subdirectories count
+	if dirs != 0 {
+		fmt.Fprintf(&b, "%d subdirector", dirs)
+		if dirs > 1 {
+			b.WriteString("ies")
+		} else {
+			b.WriteString("y")
+		}
+	}
+
+	// Create string parts for files count
+	if files != 0 {
+		if dirs != 0 {
+			b.WriteString("and")
+		}
+		fmt.Fprintf(&b, "%d file", files)
+		if files > 1 {
+			b.WriteString("s")
+		}
+	}
+
+	if startidx != 0 {
+		fmt.Fprintf(&b, " not shown, full directory path : %s", dirPath)
+	}
+
+	return b.String()
 }

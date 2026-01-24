@@ -2,24 +2,28 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	// "runtime"
 )
 
 var programName string = "dirtree"
 
 var defaultConfig string = `# Dirtree Configuration
 jsonTree: false
-txtTree: true
-terminalTree: false
+txtTree: false
+terminalTree: true
 annotateTree: false
 density: 3
 annotationsPadding: 3
 filesFirst: true
 hiddenFiles: false
 alphabetic: true
-connSetSelector: 2
+connectorSet: 2
+maxDepth: 10
+maxElements: 20
 `
 
 var (
@@ -43,7 +47,9 @@ var (
 var (
 	density            int
 	annotationsPadding int
-	connSetSelector    int
+	connectorSet       int
+	maxDepth           int
+	maxElements        int
 )
 
 var (
@@ -76,24 +82,36 @@ func init() {
 	flag.BoolVar(&filesFirst, "filesfirst", config.FilesFirst, "List files before directories")
 	flag.BoolVar(&hiddenFiles, "hiddenfiles", config.HiddenFiles, "Add hidden files to the tree")
 	flag.BoolVar(&alphabetic, "alphabetic", config.Alphabetic, "Sort entries alphabetically")
-	flag.IntVar(&connSetSelector, "connectorset", config.ConnSetSelector, "The connector set among \"└├│─\"(1), \"+|-\"(2) and \"|_/\"(3)")
+	flag.IntVar(&connectorSet, "connectorset", config.ConnectorSet, "The connector set among \"└├│─\"(1), \"+|-\"(2) and \"|_/\"(3)")
+	flag.IntVar(&maxDepth, "maxdepth", config.MaxDepth, "Maximum folder nesting depth the program can go")
+	flag.IntVar(&maxElements, "maxelements", config.MaxElements, "Maximum amount of elements shown in a folder")
 
 	// Config independent parameters
 	flag.BoolVar(&verbose, "verbose", false, "Add debug prints to the output")
 	flag.BoolVar(&unrestricted, "unrestricted", false, "Bypass restrictions on nesting depth and output length. Things might break !")
 	flag.BoolVar(&saveConf, "saveconf", false, "Save current flag values to the configuration file")
 	flag.BoolVar(&displayConf, "displayconf", false, "Display the current configuration in the terminal")
+
+	// runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
+// TODO Add a flag to enable and disable directory remainders hinting (whether to give the dir path or not)
+// TODO Add resources management with runtime, like low power (2 cores), normal (half) and full blast (all cores)
 func main() {
 	flag.Parse()
 
 	// Get inputPath as a positional argument
 	inputPath := flag.Args()[0]
 	if inputPath == "" {
-		if displayConf {
-			displayConfiguration()
-			return
+		// The user doesn't want to use the program
+		if displayConf || saveConf {
+			if displayConf {
+				displayConfiguration()
+			}
+			if saveConf {
+				saveConfiguration()
+			}
+			os.Exit(0)
 		} else {
 			errorLog.Fatal("Please provide a directory to explore as argument")
 		}
@@ -106,32 +124,12 @@ func main() {
 
 	// Display config if requested
 	if displayConf {
-		infoLog.Printf(`jsonTree %t
-		txtTree %t
-		terminalTree %t
-		annotateTree %t
-		density %d
-		annotationsPadding %d,
-		filesFirst %t,
-		hiddenFiles %t,
-		alphabetic %t,
-		connSetSelector %d`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connSetSelector)
+		displayConfiguration()
 	}
 
 	// Save config if requested
 	if saveConf {
-		newConfig := &Config{
-			JsonTree:           jsonTree,
-			TxtTree:            txtTree,
-			TerminalTree:       terminalTree,
-			AnnotateTree:       annotateTree,
-			Density:            density,
-			AnnotationsPadding: annotationsPadding,
-		}
-		if err := saveConfig(newConfig, programName); err != nil {
-			errorLog.Fatalf("Error saving config: %s", err)
-		}
-		infoLog.Println("Configuration saved successfully")
+		saveConfiguration()
 	}
 
 	// Warning the user when working in unrestricted mode
@@ -151,15 +149,39 @@ func main() {
 		annotateTree,
 		density,
 		annotationsPadding,
-		connSetSelector,
+		connectorSet,
 		filesFirst,
 		hiddenFiles,
 		alphabetic,
+		maxDepth,
+		maxElements,
 	)
 	_ = tree
 }
 
-// displayConfiguration in the terminal
+// saveConfiguration saves current configuration
+func saveConfiguration() {
+	newConfig := &Config{
+		JsonTree:           jsonTree,
+		TxtTree:            txtTree,
+		TerminalTree:       terminalTree,
+		AnnotateTree:       annotateTree,
+		Density:            density,
+		AnnotationsPadding: annotationsPadding,
+		FilesFirst:         filesFirst,
+		HiddenFiles:        hiddenFiles,
+		Alphabetic:         alphabetic,
+		ConnectorSet:       connectorSet,
+		MaxDepth:           maxDepth,
+		MaxElements:        maxElements,
+	}
+	if err := saveConfig(newConfig, programName); err != nil {
+		errorLog.Fatalf("Error saving config: %s", err)
+	}
+	infoLog.Println("Configuration saved successfully")
+}
+
+// displayConfiguration displays the current configuration in the terminal
 func displayConfiguration() {
 	infoLog.Printf(`jsonTree %t
 		txtTree %t
@@ -170,6 +192,7 @@ func displayConfiguration() {
 		filesFirst %t,
 		hiddenFiles %t,
 		alphabetic %t,
-		connSetSelector %d
-		maxDepth %d`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connSetSelector, maxDepth)
+		connectorSet %d
+		maxDepth %d,
+		maxElements %d`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connectorSet, maxDepth, maxElements)
 }
