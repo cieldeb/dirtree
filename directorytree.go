@@ -46,18 +46,18 @@ type connectors struct {
 }
 
 // NewTree creates a new Tree instance
-func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, annotateTree bool, density, annotationsPadding, connectorSet int, filesFirst, hiddenFiles, alphabetic bool, maxDepth, maxElements int, dirHints bool) *Tree {
+func NewTree(inputPath, outputPath string, config *Config) *Tree {
 	t := &Tree{
 		inputPath:     inputPath,
 		outputPath:    outputPath,
-		terminalTree:  terminalTree,
-		txtTree:       txtTree,
-		jsonTree:      jsonTree,
-		density:       density,
-		connectorSet:  connectorSet,
-		filesFirst:    filesFirst,
-		hiddenFiles:   hiddenFiles,
-		alphabetic:    alphabetic,
+		terminalTree:  config.TerminalTree,
+		txtTree:       config.TxtTree,
+		jsonTree:      config.JsonTree,
+		density:       config.Density,
+		connectorSet:  config.ConnectorSet,
+		filesFirst:    config.FilesFirst,
+		hiddenFiles:   config.HiddenFiles,
+		alphabetic:    config.Alphabetic,
 		maxLineLength: 0,
 		depth:         0,
 	}
@@ -211,12 +211,11 @@ func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, ma
 		// If we reach the maximum amount of elements, we create an additional line describing what is left in the directory
 		if idx == maxElements {
 			if t.visualTree {
-				t.visualStructure.WriteString(t.composeSummary(dirPath, localEntries, idx, false) + "\n")
+				t.visualStructure.WriteString(t.composeSummary(dirPath, localEntries, idx, false, isLast) + "\n")
 			}
 			break
 		}
 
-		// TODO look for more spacing between last line and first folder line for readability ? Or something else
 		if entry.IsDir() {
 			baseName := entry.Name()
 
@@ -232,7 +231,7 @@ func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, ma
 				fmt.Printf("Skipping excluded: %s\n", baseName)
 				if t.jsonTree {
 					// Default case with 0 start index of entries reading
-					directoryTree[entry.Name()] = t.composeSummary(dirPath, subEntries, 0, true)
+					directoryTree[entry.Name()] = t.composeSummary(dirPath, subEntries, 0, true, isLast)
 					continue
 				}
 			}
@@ -286,7 +285,7 @@ func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, ma
 				t.depth -= 1
 			} else {
 				if t.visualTree {
-					t.visualStructure.WriteString(t.composeSummary(fullPath, subEntries, 0, false) + "\n")
+					t.visualStructure.WriteString(t.composeSummary(fullPath, subEntries, 0, false, isLast) + "\n")
 				}
 			}
 		} else {
@@ -337,7 +336,7 @@ func (t *Tree) createTreeLine(path string, isLast bool) {
 // composeSummary creates the summary of a folder that exceeds the limits set by the user.
 // If maxElements is reached for a directory, a final string is placed as the last line for the folder,
 // string that can look like that : "and 5 subdirectories and 1 file not shown, full directory path : /path/to/directory"
-func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx int, jsonCase bool) string {
+func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx int, jsonCase, isLast bool) string {
 	dirs := 0
 	files := 0
 
@@ -352,7 +351,23 @@ func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx in
 
 	// Creating and building the string base
 	var b strings.Builder
+
+	// Add the prefix for the current depth
 	b.WriteString(t.prefix)
+
+	// Adding spaces if we are at maximum nesting depth and not maximum elements amount
+	if t.depth == maxDepth && startidx == 0 {
+		// If the element is not the last line describing the directory, adding the vertical connector
+		if !isLast {
+			b.WriteString(t.connectors.vertical)
+		} else {
+			b.WriteString(" ")
+		}
+		// In any case, adding spaces to show nesting of the directory
+		b.WriteString(strings.Repeat(" ", t.density))
+	}
+
+	// Adding the base of the branch, the connectors and a space
 	b.WriteString(t.connectors.leaf)
 	b.WriteString(strings.Repeat(t.connectors.horizontal, t.density))
 	b.WriteString(" ")
@@ -383,7 +398,7 @@ func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx in
 	}
 
 	// If needed, add connecting "and"
-	if secondQuantity != 0 {
+	if firstQuantity != 0 && secondQuantity != 0 {
 		b.WriteString(" and ")
 	}
 
