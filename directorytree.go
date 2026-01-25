@@ -210,7 +210,7 @@ func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, ma
 		// If we reach the maximum amount of elements, we create an additional line describing what is left in the directory
 		if idx == maxElements {
 			if t.visualTree {
-				t.visualStructure.WriteString(t.composeSummary(dirPath, localEntries, idx) + "\n")
+				t.visualStructure.WriteString(t.composeSummary(dirPath, localEntries, idx, false) + "\n")
 			}
 			break
 		}
@@ -230,7 +230,7 @@ func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, ma
 				fmt.Printf("Skipping excluded: %s\n", baseName)
 				if t.jsonTree {
 					// Default case with 0 start index of entries reading
-					directoryTree[entry.Name()] = t.composeSummary(dirPath, subEntries, 0)
+					directoryTree[entry.Name()] = t.composeSummary(dirPath, subEntries, 0, true)
 					continue
 				}
 			}
@@ -340,7 +340,10 @@ func (t *Tree) createTreeLine(path string, isLast bool) {
 	}
 }
 
-func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx int) string {
+// composeSummary creates the summary of a folder that exceeds the limits set by the user.
+// If maxElements is reached for a directory, a final string is placed as the last line for the folder,
+// string that can look like that : "and 5 subdirectories and 1 file not shown, full directory path : /path/to/directory"
+func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx int, jsonCase bool) string {
 	dirs := 0
 	files := 0
 
@@ -360,28 +363,43 @@ func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx in
 	b.WriteString(strings.Repeat(t.connectors.horizontal, t.density))
 	b.WriteString(" ")
 
+	// Set the order in which elements are added to the description string depending on the filesFirst flag value
+	var firstElementName, secondElementName string
+	var firstQuantity, secondQuantity int
+
+	if filesFirst {
+		firstElementName = "file"
+		secondElementName = "subdirector"
+		firstQuantity = files
+		secondQuantity = dirs
+	} else {
+		firstElementName = "subdirector"
+		secondElementName = "file"
+		firstQuantity = dirs
+		secondQuantity = files
+	}
+
+	// Add plurals
+	firstElementName = pluralize(firstElementName, firstQuantity)
+	secondElementName = pluralize(secondElementName, secondQuantity)
+
 	// Create string parts for subdirectories count
-	if dirs != 0 {
-		fmt.Fprintf(&b, "%d subdirector", dirs)
-		if dirs > 1 {
-			b.WriteString("ies")
-		} else {
-			b.WriteString("y")
-		}
+	if firstQuantity != 0 {
+		fmt.Fprintf(&b, "%d %s", firstQuantity, firstElementName)
+	}
+
+	// If needed, add connecting "and"
+	if secondQuantity != 0 {
+		b.WriteString(" and ")
 	}
 
 	// Create string parts for files count
-	if files != 0 {
-		if dirs != 0 {
-			b.WriteString("and")
-		}
-		fmt.Fprintf(&b, "%d file", files)
-		if files > 1 {
-			b.WriteString("s")
-		}
+	if secondQuantity != 0 {
+		fmt.Fprintf(&b, "%d %s", secondQuantity, secondElementName)
 	}
 
-	if startidx != 0 {
+	// Add sentence end when we are not purely descriptive
+	if !jsonCase {
 		fmt.Fprint(&b, " not shown")
 		if t.depth != 0 && dirHints {
 			fmt.Fprintf(&b, ", full directory path : %s", dirPath)
@@ -389,4 +407,19 @@ func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx in
 	}
 
 	return b.String()
+}
+
+// pluralize adds suffixes to element names depending on the case
+func pluralize(base string, count int) string {
+	if base == "subdirector" {
+		if count == 1 {
+			return "subdirectory"
+		}
+		return "subdirectories"
+	}
+	// For "file"
+	if count == 1 {
+		return base
+	}
+	return base + "s"
 }
