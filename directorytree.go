@@ -1,3 +1,4 @@
+// TODO maybe split this file :sweat:
 package main
 
 import (
@@ -136,8 +137,8 @@ func (t *Tree) generate() {
 		content := t.visualStructure.String()
 		if t.txtTree {
 			treeFile := filepath.Join(t.outputPath, "tree.txt")
-			// Add UTF-8 BOM
-			contentWithBOM := append([]byte{0xEF, 0xBB, 0xBF}, []byte(content)...)
+			contentWithBOM := append([]byte{0xEF, 0xBB, 0xBF}, []byte(t.inputPath+"\n")...)
+			contentWithBOM = append(contentWithBOM, []byte(content)...)
 			if err := os.WriteFile(treeFile, contentWithBOM, 0644); err != nil {
 				fmt.Printf("Error writing visual tree file: %v\n", err)
 			}
@@ -215,6 +216,7 @@ func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, ma
 			break
 		}
 
+		// TODO look for more spacing between last line and first folder line for readability ? Or something else
 		if entry.IsDir() {
 			baseName := entry.Name()
 
@@ -255,58 +257,50 @@ func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, ma
 			t.elementIsDir = true
 			t.createTreeLine(fullPath, isLast)
 
-			if t.visualTree {
-				prefixAddition := ""
-				if isLast {
-					prefixAddition = strings.Repeat(" ", t.density)
+			// Checking that we didn't exceed the maximum nesting depth
+			if t.depth+1 <= maxDepth {
+				t.depth += 1
+				if t.visualTree {
+					// Composing the prefix for the directory
+					prefixAddition := ""
+					if isLast {
+						prefixAddition = strings.Repeat(" ", t.density)
+					} else {
+						prefixAddition = t.connectors.vertical + strings.Repeat(" ", t.density)
+					}
+					t.prefix += prefixAddition
+
+					subtree := t.traverseTree(fullPath, &subEntries, maxDepth, maxElements)
+					if t.jsonTree {
+						directoryTree[entry.Name()] = subtree
+					}
+
+					// Trimming the prefix after having processed the directory
+					t.prefix = t.prefix[:len(t.prefix)-len(prefixAddition)]
 				} else {
-					prefixAddition = t.connectors.vertical + strings.Repeat(" ", t.density)
-				}
-				t.prefix += prefixAddition
-
-				// Checking that we didn't exceed the maximum nesting depth
-				if t.depth <= maxDepth {
-					t.depth += 1
 					subtree := t.traverseTree(fullPath, &subEntries, maxDepth, maxElements)
-
 					if t.jsonTree {
 						directoryTree[entry.Name()] = subtree
 					}
-
-					t.depth -= 1
 				}
-
-				// Remove the exact string we added
-				t.prefix = t.prefix[:len(t.prefix)-len(prefixAddition)]
+				t.depth -= 1
 			} else {
-				// Checking that we didn't exceed the maximum nesting depth
-				if t.depth <= maxDepth {
-					t.depth += 1
-					subtree := t.traverseTree(fullPath, &subEntries, maxDepth, maxElements)
-
-					if t.jsonTree {
-						directoryTree[entry.Name()] = subtree
-					}
-
-					t.depth -= 1
+				if t.visualTree {
+					t.visualStructure.WriteString(t.composeSummary(fullPath, subEntries, 0, false) + "\n")
 				}
 			}
 		} else {
+			// Skipping hidden entries
 			if !t.hiddenFiles && entry.Name()[0] == '.' {
 				continue
 			}
+
 			t.elementIsDir = false
 			t.createTreeLine(fullPath, isLast)
 
+			// Handling the case of json tree
 			if t.jsonTree {
-				ext := strings.ToLower(filepath.Ext(entry.Name()))
-				if ext == ".png" || ext == ".jpg" || ext == ".jpeg" {
-					directoryTree[entry.Name()] = map[string]string{
-						entry.Name(): entry.Name() + "_data",
-					}
-				} else {
-					directoryTree[entry.Name()] = map[string]any{}
-				}
+				directoryTree[entry.Name()] = map[string]any{}
 			}
 		}
 	}
