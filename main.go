@@ -100,7 +100,6 @@ func init() {
 	// runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
-// TODO Add a flag to enable and disable directory remainders hinting (whether to give the dir path or not)
 // TODO Add resources management with runtime, like low power (2 cores), normal (half) and full blast (all cores)
 func main() {
 	flag.Parse()
