@@ -45,7 +45,7 @@ type connectors struct {
 }
 
 // NewTree creates a new Tree instance
-func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, annotateTree bool, density, annotationsPadding, connectorSet int, filesFirst, hiddenFiles, alphabetic bool, maxDepth, maxElements int) *Tree {
+func NewTree(inputPath, outputPath string, terminalTree, txtTree, jsonTree, annotateTree bool, density, annotationsPadding, connectorSet int, filesFirst, hiddenFiles, alphabetic bool, maxDepth, maxElements int, dirHints bool) *Tree {
 	t := &Tree{
 		inputPath:     inputPath,
 		outputPath:    outputPath,
@@ -383,7 +383,7 @@ func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx in
 
 	if startidx != 0 {
 		fmt.Fprint(&b, " not shown")
-		if t.depth != 0 {
+		if t.depth != 0 && dirHints {
 			fmt.Fprintf(&b, ", full directory path : %s", dirPath)
 		}
 	}

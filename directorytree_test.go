@@ -187,7 +187,7 @@ func TestTreeGeneration_TxtOutput(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Check if output file was created
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -231,7 +231,7 @@ func TestTreeGeneration_JSONOutput(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, false, true, false, 3, 3, 2, false, false, true, 10, 20)
+	NewTree(tmpDir, outputDir, false, false, true, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Check if output file was created
 	jsonFile := filepath.Join(outputDir, "tree.json")
@@ -275,7 +275,7 @@ func TestTreeGeneration_WithHiddenFiles(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	// Generate with hidden files enabled
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, true, true, 10, 20)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, true, true, 10, 20, true)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -311,7 +311,7 @@ func TestTreeGeneration_FilesFirst(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	// Generate with filesFirst enabled
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, true, false, true, 10, 20)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, true, false, true, 10, 20, true)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -359,7 +359,7 @@ func TestTreeGeneration_ExcludedFolders(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -411,7 +411,7 @@ func TestTreeGeneration_DensityLevels(t *testing.T) {
 			w.Close()
 			defer func() { os.Stdin = oldStdin }()
 
-			NewTree(tmpDir, outputDir, false, true, false, false, tt.density, 3, 2, false, false, true, 10, 20)
+			NewTree(tmpDir, outputDir, false, true, false, false, tt.density, 3, 2, false, false, true, 10, 20, true)
 
 			// Read tree.txt
 			treeFile := filepath.Join(outputDir, "tree.txt")
@@ -458,7 +458,7 @@ func TestTreeGeneration_AlphabeticSorting(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20)
+	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -547,7 +547,7 @@ func TestDefaultOutputPath(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	// Pass empty output path
-	NewTree(tmpDir, "", false, true, false, false, 3, 3, 2, false, false, true, 10, 20)
+	NewTree(tmpDir, "", false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Check if output was created in default location (inputPath/tree)
 	defaultOutputDir := filepath.Join(tmpDir, "tree")

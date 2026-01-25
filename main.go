@@ -24,6 +24,7 @@ alphabetic: true
 connectorSet: 2
 maxDepth: 10
 maxElements: 20
+dirHints: true
 `
 
 var (
@@ -38,6 +39,7 @@ var (
 	hiddenFiles  bool
 	alphabetic   bool
 	unrestricted bool
+	dirHints     bool
 )
 
 var (
@@ -85,6 +87,9 @@ func init() {
 	flag.IntVar(&connectorSet, "connectorset", config.ConnectorSet, "The connector set among \"└├│─\"(1), \"+|-\"(2) and \"|_/\"(3)")
 	flag.IntVar(&maxDepth, "maxdepth", config.MaxDepth, "Maximum folder nesting depth the program can go")
 	flag.IntVar(&maxElements, "maxelements", config.MaxElements, "Maximum amount of elements shown in a folder")
+	flag.BoolVar(&dirHints, "dirhints", config.DirHints, "Add path hints when giving a directory's details")
+
+	flag.StringVar(&outputPath, "output", "", "The output directory path")
 
 	// Config independent parameters
 	flag.BoolVar(&verbose, "verbose", false, "Add debug prints to the output")
@@ -155,6 +160,7 @@ func main() {
 		alphabetic,
 		maxDepth,
 		maxElements,
+		dirHints,
 	)
 	_ = tree
 }
@@ -174,6 +180,7 @@ func saveConfiguration() {
 		ConnectorSet:       connectorSet,
 		MaxDepth:           maxDepth,
 		MaxElements:        maxElements,
+		DirHints:           dirHints,
 	}
 	if err := saveConfig(newConfig, programName); err != nil {
 		errorLog.Fatalf("Error saving config: %s", err)
