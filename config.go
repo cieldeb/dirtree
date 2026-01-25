@@ -9,19 +9,20 @@ import (
 )
 
 type Config struct {
-	JsonTree           bool `mapstructure:"jsonTree"`
-	TxtTree            bool `mapstructure:"txtTree"`
-	TerminalTree       bool `mapstructure:"terminalTree"`
-	AnnotateTree       bool `mapstructure:"annotateTree"`
-	Density            int  `mapstructure:"density"`
-	AnnotationsPadding int  `mapstructure:"annotationsPadding"`
-	FilesFirst         bool `mapstructure:"filesFirst"`
-	HiddenFiles        bool `mapstructure:"hiddenFiles"`
-	Alphabetic         bool `mapstructure:"alphabetic"`
-	ConnectorSet       int  `mapstructure:"connectorSet"`
-	MaxDepth           int  `mapstructure:"maxDepth"`
-	MaxElements        int  `mapstructure:"maxElements"`
-	DirHints           bool `mapstructure:"dirHints"`
+	JsonTree           bool   `mapstructure:"jsonTree"`
+	TxtTree            bool   `mapstructure:"txtTree"`
+	TerminalTree       bool   `mapstructure:"terminalTree"`
+	AnnotateTree       bool   `mapstructure:"annotateTree"`
+	Density            int    `mapstructure:"density"`
+	AnnotationsPadding int    `mapstructure:"annotationsPadding"`
+	FilesFirst         bool   `mapstructure:"filesFirst"`
+	HiddenFiles        bool   `mapstructure:"hiddenFiles"`
+	Alphabetic         bool   `mapstructure:"alphabetic"`
+	ConnectorSet       int    `mapstructure:"connectorSet"`
+	MaxDepth           int    `mapstructure:"maxDepth"`
+	MaxElements        int    `mapstructure:"maxElements"`
+	DirHints           bool   `mapstructure:"dirHints"`
+	PowerLevel         string `mapstructure:"powerLevel"`
 }
 
 func loadConfig(programName, defaultConfig string) (*Config, error) {
@@ -55,6 +56,7 @@ func loadConfig(programName, defaultConfig string) (*Config, error) {
 	viper.SetDefault("maxDepth", 10)
 	viper.SetDefault("maxElements", 20)
 	viper.SetDefault("dirHints", true)
+	viper.SetDefault("powerLevel", "m")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -87,6 +89,7 @@ func saveConfig(config *Config, programName string) error {
 	viper.Set("maxDepth", config.MaxDepth)
 	viper.Set("maxElements", config.MaxElements)
 	viper.Set("dirHints", config.DirHints)
+	viper.Set("powerLevel", config.PowerLevel)
 
 	if err := viper.WriteConfigAs(configFile); err != nil {
 		return fmt.Errorf("error writing config file: %w", err)

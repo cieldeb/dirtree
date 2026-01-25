@@ -1,12 +1,12 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	flag "github.com/spf13/pflag"
 	"io"
 	"log"
 	"os"
-	// "runtime"
+	"runtime"
 )
 
 var programName string = "dirtree"
@@ -25,6 +25,7 @@ connectorSet: 2
 maxDepth: 10
 maxElements: 20
 dirHints: true
+powerLevel: "m"
 `
 
 var (
@@ -44,6 +45,7 @@ var (
 
 var (
 	outputPath string
+	powerLevel string
 )
 
 var (
@@ -78,31 +80,57 @@ func init() {
 	flag.BoolVar(&txtTree, "txt", config.TxtTree, "Set true to output the tree in a text file")
 	flag.BoolVar(&terminalTree, "terminal", config.TerminalTree, "Set true to output the tree to the terminal")
 	flag.BoolVar(&annotateTree, "annotate", config.AnnotateTree, "Set true to add annotations to the tree")
-	flag.StringVar(&outputPath, "output", "", "The output directory path")
 	flag.IntVar(&density, "density", config.Density, "The tree density, 1 is dense, 5 is spacious")
 	flag.IntVar(&annotationsPadding, "annotationspadding", config.AnnotationsPadding, "The padding between annotations fields")
 	flag.BoolVar(&filesFirst, "filesfirst", config.FilesFirst, "List files before directories")
-	flag.BoolVar(&hiddenFiles, "hiddenfiles", config.HiddenFiles, "Add hidden files to the tree")
+	flag.BoolVar(&hiddenFiles, "hidden", config.HiddenFiles, "Add hidden files to the tree")
 	flag.BoolVar(&alphabetic, "alphabetic", config.Alphabetic, "Sort entries alphabetically")
 	flag.IntVar(&connectorSet, "connectorset", config.ConnectorSet, "The connector set among \"└├│─\"(1), \"+|-\"(2) and \"|_/\"(3)")
 	flag.IntVar(&maxDepth, "maxdepth", config.MaxDepth, "Maximum folder nesting depth the program can go")
 	flag.IntVar(&maxElements, "maxelements", config.MaxElements, "Maximum amount of elements shown in a folder")
 	flag.BoolVar(&dirHints, "dirhints", config.DirHints, "Add path hints when giving a directory's details")
+	flag.StringVar(&powerLevel, "powerLevel", config.PowerLevel, "Sets the amount of cpu cores used : l(ow) -> 2, m(edium) -> half of all, a(ll) -> all available cores")
 
 	flag.StringVar(&outputPath, "output", "", "The output directory path")
 
 	// Config independent parameters
-	flag.BoolVar(&verbose, "verbose", false, "Add debug prints to the output")
-	flag.BoolVar(&unrestricted, "unrestricted", false, "Bypass restrictions on nesting depth and output length. Things might break !")
-	flag.BoolVar(&saveConf, "saveconf", false, "Save current flag values to the configuration file")
+	flag.BoolVarP(&verbose, "verbose", "v", false, "Add debug prints to the output")
+	flag.BoolVarP(&unrestricted, "unrestricted", "u", false, "Bypass restrictions on nesting depth, output length and uses all available cpu cores. Things might break !")
+	flag.BoolVarP(&saveConf, "saveconf", "s", false, "Save current flag values to the configuration file")
 	flag.BoolVar(&displayConf, "displayconf", false, "Display the current configuration in the terminal")
-
-	// runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
-// TODO Add resources management with runtime, like low power (2 cores), normal (half) and full blast (all cores)
+// TODO Add interactive first setup for parameters (default input folder for example)
+
 func main() {
 	flag.Parse()
+
+	// Setting number of cpu cores to be used
+	if powerLevel == "l" {
+		runtime.GOMAXPROCS(2)
+	} else if powerLevel == "m" {
+		runtime.GOMAXPROCS(runtime.NumCPU() / 2)
+	} else if powerLevel == "a" {
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	}
+
+	// Initializing configuration
+	config := &Config{
+		JsonTree:           jsonTree,
+		TxtTree:            txtTree,
+		TerminalTree:       terminalTree,
+		AnnotateTree:       annotateTree,
+		Density:            density,
+		AnnotationsPadding: annotationsPadding,
+		FilesFirst:         filesFirst,
+		HiddenFiles:        hiddenFiles,
+		Alphabetic:         alphabetic,
+		ConnectorSet:       connectorSet,
+		MaxDepth:           maxDepth,
+		MaxElements:        maxElements,
+		DirHints:           dirHints,
+		PowerLevel:         powerLevel,
+	}
 
 	// Get inputPath as a positional argument
 	inputPath := flag.Args()[0]
@@ -113,7 +141,7 @@ func main() {
 				displayConfiguration()
 			}
 			if saveConf {
-				saveConfiguration()
+				saveConfiguration(config)
 			}
 			os.Exit(0)
 		} else {
@@ -133,55 +161,25 @@ func main() {
 
 	// Save config if requested
 	if saveConf {
-		saveConfiguration()
+		saveConfiguration(config)
 	}
 
 	// Warning the user when working in unrestricted mode
 	if unrestricted {
-		infoLog.Println("Unrestricted is set to true. If you continue, the output might be very long and the memory usage heavy. Press ctrl+c to abort or Enter to continue")
+		infoLog.Println("Unrestricted is set to true. If you continue, the output might be very long, the memory usage heavy and the program will use all available cores. Press ctrl+c to abort or Enter to continue")
 		fmt.Scanln()
 		maxDepth = 100000
 		maxElements = 100000
+		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
-	tree := NewTree(
-		inputPath,
-		outputPath,
-		terminalTree,
-		txtTree,
-		jsonTree,
-		annotateTree,
-		density,
-		annotationsPadding,
-		connectorSet,
-		filesFirst,
-		hiddenFiles,
-		alphabetic,
-		maxDepth,
-		maxElements,
-		dirHints,
-	)
+	tree := NewTree(inputPath, outputPath, config)
 	_ = tree
 }
 
 // saveConfiguration saves current configuration
-func saveConfiguration() {
-	newConfig := &Config{
-		JsonTree:           jsonTree,
-		TxtTree:            txtTree,
-		TerminalTree:       terminalTree,
-		AnnotateTree:       annotateTree,
-		Density:            density,
-		AnnotationsPadding: annotationsPadding,
-		FilesFirst:         filesFirst,
-		HiddenFiles:        hiddenFiles,
-		Alphabetic:         alphabetic,
-		ConnectorSet:       connectorSet,
-		MaxDepth:           maxDepth,
-		MaxElements:        maxElements,
-		DirHints:           dirHints,
-	}
-	if err := saveConfig(newConfig, programName); err != nil {
+func saveConfiguration(config *Config) {
+	if err := saveConfig(config, programName); err != nil {
 		errorLog.Fatalf("Error saving config: %s", err)
 	}
 	infoLog.Println("Configuration saved successfully")
@@ -201,5 +199,6 @@ func displayConfiguration() {
 		connectorSet %d
 		maxDepth %d,
 		maxElements %d,
-		dirHints %t`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connectorSet, maxDepth, maxElements, dirHints)
+		dirHints %t,
+		powerLevel %s`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connectorSet, maxDepth, maxElements, dirHints, powerLevel)
 }
