@@ -200,5 +200,6 @@ func displayConfiguration() {
 		alphabetic %t,
 		connectorSet %d
 		maxDepth %d,
-		maxElements %d`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connectorSet, maxDepth, maxElements)
+		maxElements %d,
+		dirHints %t`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connectorSet, maxDepth, maxElements, dirHints)
 }
