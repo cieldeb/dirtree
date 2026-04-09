@@ -133,7 +133,11 @@ func main() {
 	}
 
 	// Get inputPath as a positional argument
-	inputPath := flag.Args()[0]
+	var inputPath string
+	args := flag.Args()
+	if len(args) != 0 {
+		inputPath = args[0]
+	}
 	if inputPath == "" {
 		// The user doesn't want to use the program
 		if displayConf || saveConf {
@@ -145,7 +149,12 @@ func main() {
 			}
 			os.Exit(0)
 		} else {
-			errorLog.Fatal("Please provide a directory to explore as argument")
+			// If no path was provided when calling the executable, we default to the current working directory
+			cwd, err := os.Getwd()
+			if err != nil {
+				errorLog.Fatal("Error fetching the current working directory, please provide a path to document.")
+			}
+			inputPath = cwd
 		}
 	}
 
