@@ -2,7 +2,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -67,13 +66,13 @@ func NewTree(inputPath, outputPath string, config *Config) *Tree {
 	}
 
 	// Get excluded folders from user input
-	fmt.Print("Excluded subfolders (comma separated, no spaces): ")
-	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(input)
-	if input != "" {
-		t.excluded = strings.Split(input, ",")
-	}
+	// fmt.Print("Excluded subfolders (comma separated, no spaces): ")
+	// reader := bufio.NewReader(os.Stdin)
+	// input, _ := reader.ReadString('\n')
+	// input = strings.TrimSpace(input)
+	// if input != "" {
+	// 	t.excluded = strings.Split(input, ",")
+	// }
 
 	if t.jsonTree {
 		// Initialize the json map
@@ -416,19 +415,4 @@ func (t *Tree) composeSummary(dirPath string, entries []os.DirEntry, startidx in
 	}
 
 	return b.String()
-}
-
-// pluralize adds suffixes to element names depending on the case
-func pluralize(base string, count int) string {
-	if base == "subdirector" {
-		if count == 1 {
-			return "subdirectory"
-		}
-		return "subdirectories"
-	}
-	// For "file"
-	if count == 1 {
-		return base
-	}
-	return base + "s"
 }
