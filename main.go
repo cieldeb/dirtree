@@ -137,8 +137,7 @@ func main() {
 	args := flag.Args()
 	if len(args) != 0 {
 		inputPath = args[0]
-	}
-	if inputPath == "" {
+	} else {
 		// The user doesn't want to use the program
 		if displayConf || saveConf {
 			if displayConf {
