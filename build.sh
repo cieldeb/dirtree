@@ -11,5 +11,5 @@ if [ $? -eq 0 ]; then
   echo "Moved new executable to ~/.local/bin"
   exit 0
 else
-  echo "Watermarker executable copy failed"
+  echo "Dirtree executable copy failed"
 fi
