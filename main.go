@@ -85,7 +85,7 @@ func init() {
 	flag.IntVar(&density, "density", config.Density, "The tree density, 1 is dense, 5 is spacious")
 	flag.IntVar(&annotationsPadding, "annotationspadding", config.AnnotationsPadding, "The padding between annotations fields")
 	flag.BoolVar(&filesFirst, "filesfirst", config.FilesFirst, "List files before directories")
-	flag.BoolVar(&hiddenFiles, "hidden", config.HiddenFiles, "Add hidden files to the tree")
+	flag.BoolVarP(&hiddenFiles, "hidden", "h", config.HiddenFiles, "Add hidden files to the tree")
 	flag.BoolVar(&alphabetic, "alphabetic", config.Alphabetic, "Sort entries alphabetically")
 	flag.IntVarP(&treeSet, "treeset", "t", config.TreeSet, "The tree connectors set among:\n(1) └ ├ │ ─\n(2) + ` | - \n(3) | | _ |\n(4) o o. . o\n(5) ║ ╚ ═ ║\n(6) ╿ ┖ ╼ ╿\n(7) │ ╰ ─ │\n")
 	flag.IntVar(&maxDepth, "maxdepth", config.MaxDepth, "Maximum folder nesting depth the program can go")
