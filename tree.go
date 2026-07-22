@@ -239,7 +239,7 @@ func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, ma
 		// If we reach the maximum amount of elements, we create an additional line describing what is left in the directory
 		if idx == maxElements {
 			if t.visualTree {
-				t.visualStructure.WriteString(t.composeSummary(dirPath, localEntries, idx, false, isLast) + "\n")
+				t.visualStructure.WriteString(t.composeSummary(dirPath, localEntries, idx, false, isLast));t.visualStructure.WriteString("\n")
 			}
 			break
 		}
@@ -313,7 +313,7 @@ func (t *Tree) traverseTree(dirPath string, entries *[]os.DirEntry, maxDepth, ma
 				t.depth -= 1
 			} else {
 				if t.visualTree {
-					t.visualStructure.WriteString(t.composeSummary(fullPath, subEntries, 0, false, isLast) + "\n")
+					t.visualStructure.WriteString(t.composeSummary(fullPath, subEntries, 0, false, isLast));t.visualStructure.WriteString("\n")
 				}
 			}
 		} else {
@@ -357,7 +357,7 @@ func (t *Tree) createTreeLine(path string, isLast bool) {
 	)
 
 	if t.visualTree {
-		t.visualStructure.WriteString(lineStr + "\n")
+		t.visualStructure.WriteString(lineStr);t.visualStructure.WriteString("\n")
 	}
 }
 
