@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 package main
 
 import (
@@ -7,6 +8,33 @@ import (
 	"strings"
 	"testing"
 )
+
+// newTreeWithConfig builds a Config from individual values (mirroring the old
+// positional NewTree signature) and constructs a Tree with it. It also sets the
+// package-level maxDepth/maxElements used directly by traverseTree.
+func newTreeWithConfig(inputPath, outputPath string, terminalTree, txtTree, jsonTree, annotateTree bool, density, annotationsPadding, connectorSet int, filesFirst, hiddenFiles, alphabetic bool, maxDepthVal, maxElementsVal int, dirHintsVal bool) *Tree {
+	maxDepth = maxDepthVal
+	maxElements = maxElementsVal
+	dirHints = dirHintsVal
+
+	config := &Config{
+		TerminalTree:       terminalTree,
+		TxtTree:            txtTree,
+		JsonTree:           jsonTree,
+		AnnotateTree:       annotateTree,
+		Density:            density,
+		AnnotationsPadding: annotationsPadding,
+		ConnectorSet:       connectorSet,
+		FilesFirst:         filesFirst,
+		HiddenFiles:        hiddenFiles,
+		Alphabetic:         alphabetic,
+		MaxDepth:           maxDepthVal,
+		MaxElements:        maxElementsVal,
+		DirHints:           dirHintsVal,
+	}
+
+	return NewTree(inputPath, outputPath, config)
+}
 
 // Helper function to create a test directory structure
 func createTestDir(t *testing.T) string {
@@ -187,7 +215,7 @@ func TestTreeGeneration_TxtOutput(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
+	newTreeWithConfig(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Check if output file was created
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -231,7 +259,7 @@ func TestTreeGeneration_JSONOutput(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, false, true, false, 3, 3, 2, false, false, true, 10, 20, true)
+	newTreeWithConfig(tmpDir, outputDir, false, false, true, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Check if output file was created
 	jsonFile := filepath.Join(outputDir, "tree.json")
@@ -275,7 +303,7 @@ func TestTreeGeneration_WithHiddenFiles(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	// Generate with hidden files enabled
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, true, true, 10, 20, true)
+	newTreeWithConfig(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, true, true, 10, 20, true)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -311,7 +339,7 @@ func TestTreeGeneration_FilesFirst(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	// Generate with filesFirst enabled
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, true, false, true, 10, 20, true)
+	newTreeWithConfig(tmpDir, outputDir, false, true, false, false, 3, 3, 2, true, false, true, 10, 20, true)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -359,7 +387,7 @@ func TestTreeGeneration_ExcludedFolders(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
+	newTreeWithConfig(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -411,7 +439,7 @@ func TestTreeGeneration_DensityLevels(t *testing.T) {
 			w.Close()
 			defer func() { os.Stdin = oldStdin }()
 
-			NewTree(tmpDir, outputDir, false, true, false, false, tt.density, 3, 2, false, false, true, 10, 20, true)
+			newTreeWithConfig(tmpDir, outputDir, false, true, false, false, tt.density, 3, 2, false, false, true, 10, 20, true)
 
 			// Read tree.txt
 			treeFile := filepath.Join(outputDir, "tree.txt")
@@ -458,7 +486,7 @@ func TestTreeGeneration_AlphabeticSorting(t *testing.T) {
 	w.Close()
 	defer func() { os.Stdin = oldStdin }()
 
-	NewTree(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
+	newTreeWithConfig(tmpDir, outputDir, false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Read tree.txt
 	treeFile := filepath.Join(outputDir, "tree.txt")
@@ -547,7 +575,7 @@ func TestDefaultOutputPath(t *testing.T) {
 	defer func() { os.Stdin = oldStdin }()
 
 	// Pass empty output path
-	NewTree(tmpDir, "", false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
+	newTreeWithConfig(tmpDir, "", false, true, false, false, 3, 3, 2, false, false, true, 10, 20, true)
 
 	// Check if output was created in default location (inputPath/tree)
 	defaultOutputDir := filepath.Join(tmpDir, "tree")

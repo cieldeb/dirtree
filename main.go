@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 package main
 
 import (
@@ -100,7 +101,8 @@ func init() {
 	flag.BoolVar(&displayConf, "displayconf", false, "Display the current configuration in the terminal")
 }
 
-// TODO Add interactive first setup for parameters (default input folder for example)
+// TODO add a summary mode that has just enough but not too much details and intelligently documents folders
+// TODO put excluded elements in a flag
 
 func main() {
 	flag.Parse()

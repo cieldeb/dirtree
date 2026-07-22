@@ -102,4 +102,4 @@ go test ./...
 
 ## License
 
-No license specified.
+Dirtree is licensed under the [GNU General Public License v3.0 or later](LICENSE).

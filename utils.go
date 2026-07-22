@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 package main
 
 // pluralize adds suffixes to element names depending on the case

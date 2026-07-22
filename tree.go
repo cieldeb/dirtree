@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // TODO maybe split this file :sweat:
 package main
 
