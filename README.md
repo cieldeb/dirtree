@@ -60,9 +60,9 @@ dirtree --json --txt myapp   # also write tree.json and tree.txt
 | `--terminal` | `true` | Print the tree to the terminal |
 | `--txt` | `false` | Write the tree to `tree.txt` |
 | `--json` | `false` | Write the tree to `tree.json` |
-| `o`, `--output` | *(input path)* | Output directory for `tree.txt` / `tree.json` |
+| `-o`, `--output` | *(input path)* | Output directory for `tree.txt` / `tree.json` |
 | `--density` | `3` | Tree spacing; `1` is dense, `5` is spacious |
-| `t`, `--treeset` | `2` | Connector style; see [Connector Sets](#connector-sets) below |
+| `-t`, `--treeset` | `2` | Connector style; see [Connector Sets](#connector-sets) below |
 | `--filesfirst` | `true` | List files before directories |
 | `--alphabetic` | `true` | Sort entries alphabetically |
 | `--hidden` | `false` | Include hidden files/directories |
