@@ -5,7 +5,7 @@ echo "Building executable..."
 go build
 
 echo "Moving executable to ~/.local/bin"
-cp dirtree ~/.local/bin
+mv dirtree ~/.local/bin
 
 if [ $? -eq 0 ]; then
   echo "Moved new executable to ~/.local/bin"
