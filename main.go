@@ -81,7 +81,7 @@ func init() {
 	flag.BoolVar(&jsonTree, "json", config.JsonTree, "Set true to output the tree as JSON")
 	flag.BoolVar(&txtTree, "txt", config.TxtTree, "Set true to output the tree in a text file")
 	flag.BoolVar(&terminalTree, "terminal", config.TerminalTree, "Set true to output the tree to the terminal")
-	flag.BoolVar(&annotateTree, "annotate", config.AnnotateTree, "Set true to add annotations to the tree")
+	flag.BoolVarP(&annotateTree, "annotate", "a", config.AnnotateTree, "Set true to add annotations to the tree")
 	flag.IntVar(&density, "density", config.Density, "The tree density, 1 is dense, 5 is spacious")
 	flag.IntVar(&annotationsPadding, "annotationspadding", config.AnnotationsPadding, "The padding between annotations fields")
 	flag.BoolVar(&filesFirst, "filesfirst", config.FilesFirst, "List files before directories")
@@ -93,7 +93,7 @@ func init() {
 	flag.BoolVar(&dirHints, "dirhints", config.DirHints, "Add path hints when giving a directory's details")
 	flag.StringVar(&powerLevel, "powerLevel", config.PowerLevel, "Sets the amount of cpu cores used : l(ow) -> 2, m(edium) -> half of all, a(ll) -> all available cores")
 
-	flag.StringVar(&outputPath, "output", "", "The output directory path")
+	flag.StringVarP(&outputPath, "output", "o", "", "The output directory path")
 
 	// Config independent parameters
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Add debug prints to the output")
