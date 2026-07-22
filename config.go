@@ -19,7 +19,7 @@ type Config struct {
 	FilesFirst         bool   `mapstructure:"filesFirst"`
 	HiddenFiles        bool   `mapstructure:"hiddenFiles"`
 	Alphabetic         bool   `mapstructure:"alphabetic"`
-	ConnectorSet       int    `mapstructure:"connectorSet"`
+	TreeSet            int    `mapstructure:"connectorSet"`
 	MaxDepth           int    `mapstructure:"maxDepth"`
 	MaxElements        int    `mapstructure:"maxElements"`
 	DirHints           bool   `mapstructure:"dirHints"`
@@ -86,7 +86,7 @@ func saveConfig(config *Config, programName string) error {
 	viper.Set("filesFirst", config.FilesFirst)
 	viper.Set("hiddenFiles", config.HiddenFiles)
 	viper.Set("alphabetic", config.Alphabetic)
-	viper.Set("connectorSet", config.ConnectorSet)
+	viper.Set("connectorSet", config.TreeSet)
 	viper.Set("maxDepth", config.MaxDepth)
 	viper.Set("maxElements", config.MaxElements)
 	viper.Set("dirHints", config.DirHints)

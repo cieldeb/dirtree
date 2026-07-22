@@ -54,7 +54,7 @@ func NewTree(inputPath, outputPath string, config *Config) *Tree {
 		txtTree:       config.TxtTree,
 		jsonTree:      config.JsonTree,
 		density:       config.Density,
-		connectorSet:  config.ConnectorSet,
+		connectorSet:  config.TreeSet,
 		filesFirst:    config.FilesFirst,
 		hiddenFiles:   config.HiddenFiles,
 		alphabetic:    config.Alphabetic,
@@ -107,6 +107,34 @@ func NewTree(inputPath, outputPath string, config *Config) *Tree {
 				leaf:       "|",
 				horizontal: "_",
 				vertical:   "|",
+			}
+		case 4:
+			t.connectors = connectors{
+				branch:     "o",
+				leaf:       "o.",
+				horizontal: ".",
+				vertical:   "o",
+			}
+		case 5:
+			t.connectors = connectors{
+				branch:     "║",
+				leaf:       "╚",
+				horizontal: "═",
+				vertical:   "║",
+			}
+		case 6:
+			t.connectors = connectors{
+				branch:     "╿",
+				leaf:       "┖",
+				horizontal: "╼",
+				vertical:   "╿",
+			}
+		case 7:
+			t.connectors = connectors{
+				branch:     "│",
+				leaf:       "╰",
+				horizontal: "─",
+				vertical:   "│",
 			}
 		default:
 			// Default to case 2 if invalid selector

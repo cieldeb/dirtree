@@ -85,7 +85,7 @@ func TestSaveConfig(t *testing.T) {
 		FilesFirst:         false,
 		HiddenFiles:        true,
 		Alphabetic:         false,
-		ConnectorSet:       3,
+		TreeSet:            3,
 	}
 
 	if err := saveConfig(testConfig, testProgramName); err != nil {
@@ -282,8 +282,8 @@ connectorSetSelector: 1
 	}
 
 	// Verify the explicitly set value was loaded
-	if config.ConnectorSet != 1 {
-		t.Errorf("Expected ConnectorSet 1 from config file, got %d", config.ConnectorSet)
+	if config.TreeSet != 1 {
+		t.Errorf("Expected ConnectorSet 1 from config file, got %d", config.TreeSet)
 	}
 
 	// Verify the explicitly set jsonTree value

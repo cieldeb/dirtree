@@ -24,7 +24,7 @@ func newTreeWithConfig(inputPath, outputPath string, terminalTree, txtTree, json
 		AnnotateTree:       annotateTree,
 		Density:            density,
 		AnnotationsPadding: annotationsPadding,
-		ConnectorSet:       connectorSet,
+		TreeSet:            connectorSet,
 		FilesFirst:         filesFirst,
 		HiddenFiles:        hiddenFiles,
 		Alphabetic:         alphabetic,

@@ -3,11 +3,12 @@ package main
 
 import (
 	"fmt"
-	flag "github.com/spf13/pflag"
 	"io"
 	"log"
 	"os"
 	"runtime"
+
+	flag "github.com/spf13/pflag"
 )
 
 var programName string = "dirtree"
@@ -52,7 +53,7 @@ var (
 var (
 	density            int
 	annotationsPadding int
-	connectorSet       int
+	treeSet            int
 	maxDepth           int
 	maxElements        int
 )
@@ -86,7 +87,7 @@ func init() {
 	flag.BoolVar(&filesFirst, "filesfirst", config.FilesFirst, "List files before directories")
 	flag.BoolVar(&hiddenFiles, "hidden", config.HiddenFiles, "Add hidden files to the tree")
 	flag.BoolVar(&alphabetic, "alphabetic", config.Alphabetic, "Sort entries alphabetically")
-	flag.IntVar(&connectorSet, "connectorset", config.ConnectorSet, "The connector set among \"└├│─\"(1), \"+|-\"(2) and \"|_/\"(3)")
+	flag.IntVarP(&treeSet, "treeset", "t", config.TreeSet, "The tree connectors set among:\n(1) └ ├ │ ─\n(2) + ` | - \n(3) | | _ |\n(4) o o. . o\n(5) ║ ╚ ═ ║\n(6) ╿ ┖ ╼ ╿\n(7) │ ╰ ─ │\n")
 	flag.IntVar(&maxDepth, "maxdepth", config.MaxDepth, "Maximum folder nesting depth the program can go")
 	flag.IntVar(&maxElements, "maxelements", config.MaxElements, "Maximum amount of elements shown in a folder")
 	flag.BoolVar(&dirHints, "dirhints", config.DirHints, "Add path hints when giving a directory's details")
@@ -128,7 +129,7 @@ func main() {
 		FilesFirst:         filesFirst,
 		HiddenFiles:        hiddenFiles,
 		Alphabetic:         alphabetic,
-		ConnectorSet:       connectorSet,
+		TreeSet:            treeSet,
 		MaxDepth:           maxDepth,
 		MaxElements:        maxElements,
 		DirHints:           dirHints,
@@ -211,5 +212,5 @@ func displayConfiguration() {
 		maxDepth %d,
 		maxElements %d,
 		dirHints %t,
-		powerLevel %s`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, connectorSet, maxDepth, maxElements, dirHints, powerLevel)
+		powerLevel %s`, jsonTree, txtTree, terminalTree, annotateTree, density, annotationsPadding, filesFirst, hiddenFiles, alphabetic, treeSet, maxDepth, maxElements, dirHints, powerLevel)
 }
