@@ -108,11 +108,12 @@ func main() {
 	flag.Parse()
 
 	// Setting number of cpu cores to be used
-	if powerLevel == "l" {
+	switch powerLevel {
+	case "l":
 		runtime.GOMAXPROCS(2)
-	} else if powerLevel == "m" {
+	case "m":
 		runtime.GOMAXPROCS(runtime.NumCPU() / 2)
-	} else if powerLevel == "a" {
+	case "a":
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
