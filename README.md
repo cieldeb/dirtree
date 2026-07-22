@@ -60,9 +60,9 @@ dirtree --json --txt myapp   # also write tree.json and tree.txt
 | `--terminal` | `true` | Print the tree to the terminal |
 | `--txt` | `false` | Write the tree to `tree.txt` |
 | `--json` | `false` | Write the tree to `tree.json` |
-| `--output` | *(input path)* | Output directory for `tree.txt` / `tree.json` |
+| `o`, `--output` | *(input path)* | Output directory for `tree.txt` / `tree.json` |
 | `--density` | `3` | Tree spacing; `1` is dense, `5` is spacious |
-| `--connectorset` | `2` | Connector style: `1` = `└├│─`, `2` = `` `+-| ``, `3` = `` |_ `` |
+| `t`, `--treeset` | `2` | Connector style; see [Connector Sets](#connector-sets) below |
 | `--filesfirst` | `true` | List files before directories |
 | `--alphabetic` | `true` | Sort entries alphabetically |
 | `--hidden` | `false` | Include hidden files/directories |
@@ -75,7 +75,17 @@ dirtree --json --txt myapp   # also write tree.json and tree.txt
 | `-s`, `--saveconf` | `false` | Save the current flag values as the new default configuration |
 | `--displayconf` | `false` | Print the current configuration and exit |
 
-`--annotate` and `--annotationspadding` are reserved for an upcoming annotation feature and currently have no effect.
+`--annotate` (short `-a`) and `--annotationspadding` are reserved for an upcoming annotation feature and currently have no effect.
+
+### Connector Sets
+
+- `1` — `└ ├ │ ─`
+- `2` — `` + ` | - ``
+- `3` — `| | _ |`
+- `4` — `o o . . o`
+- `5` — `║ ╚ ═ ║`
+- `6` — `╿ ┖ ╼ ╿`
+- `7` — `│ ╰ ─ │`
 
 ## Configuration
 
@@ -99,6 +109,10 @@ Run the test suite with:
 ```bash
 go test ./...
 ```
+
+## Credits
+
+Thanks a bunch to [pipeseroni](https://github.com/pipeseroni) for the [pipes.sh](https://github.com/pipeseroni/pipes.sh) project that gave me the idea for the sets 4 through 7 and for the treeset (shorthand t) flag name.
 
 ## License
 
