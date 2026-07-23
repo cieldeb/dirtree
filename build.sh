@@ -1,3 +1,4 @@
+cd src
 echo "Formatting go files"
 go fmt
 

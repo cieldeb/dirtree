@@ -16,7 +16,7 @@ Dirtree is a command-line utility that generates visual and machine-readable rep
 
 - Terminal, text file (`tree.txt`), and JSON (`tree.json`) output, any combination at once
 - Configurable connector style, spacing/density, and sort order (alphabetic, files-first/directories-first)
-- Hidden file inclusion/exclusion
+- Hidden files inclusion/exclusion
 - Depth and element limits to keep large trees readable, with a summary line for anything truncated (e.g. `and 12 files not shown`)
 - Persistent config file so you don't have to repeat flags every run
 - Adjustable CPU usage via a `powerLevel` setting for large scans

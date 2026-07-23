@@ -104,6 +104,7 @@ func init() {
 
 // TODO add a summary mode that has just enough but not too much details and intelligently documents folders
 // TODO put excluded elements in a flag
+// TODO switch to cobra for config and flags management
 
 func main() {
 	flag.Parse()
