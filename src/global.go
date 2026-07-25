@@ -21,6 +21,8 @@ type Config struct {
 	MaxElements        int    `mapstructure:"maxElements"`
 	DirHints           bool   `mapstructure:"dirHints"`
 	PowerLevel         string `mapstructure:"powerLevel"`
+	Unrestricted       bool   `mapstructure:"unrestricted"`
+	Verbose            bool   `mapstructure:"verbose"`
 }
 
 var configDefaults = map[string]any{
@@ -38,6 +40,8 @@ var configDefaults = map[string]any{
 	"maxElements":        20,
 	"dirHints":           true,
 	"powerLevel":         "m",
+	"unrestricted":       false,
+	"verbose":            false,
 }
 
 // loadConfig and saveConfig are the app-specific entry points used by
@@ -65,14 +69,14 @@ var (
 	txtTree      bool
 	terminalTree bool
 	annotateTree bool
-	verbose      bool
-	saveConf     bool
-	displayConf  bool
 	filesFirst   bool
 	hiddenFiles  bool
 	alphabetic   bool
-	unrestricted bool
 	dirHints     bool
+	saveConf     bool
+	displayConf  bool
+	unrestricted bool
+	verbose      bool
 )
 
 var (

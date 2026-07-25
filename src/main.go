@@ -58,21 +58,20 @@ func main() {
 	flag.StringVarP(&outputPath, "output", "o", "", "The output directory path")
 
 	// Config independent parameters
-	flag.BoolVarP(&verbose, "verbose", "v", false, "Add debug prints to the output")
-	flag.BoolVarP(&unrestricted, "unrestricted", "u", false, "Bypass restrictions on nesting depth, output length and uses all available cpu cores. Things might break !")
+	flag.BoolVarP(&verbose, "verbose", "v", loadedCfg.Verbose, "Add debug prints to the output")
+	flag.BoolVarP(&unrestricted, "unrestricted", "u", loadedCfg.Unrestricted, "Bypass restrictions on nesting depth, output length and uses all available cpu cores. Things might break !")
 	flag.BoolVarP(&saveConf, "saveconf", "s", false, "Save current flag values to the configuration file")
 	flag.BoolVar(&displayConf, "displayconf", false, "Display the current configuration in the terminal")
 
 	flag.Parse()
 
-	// Setting number of cpu cores to be used
-	switch powerLevel {
-	case "l":
-		runtime.GOMAXPROCS(2)
-	case "m":
-		runtime.GOMAXPROCS(runtime.NumCPU() / 2)
-	case "a":
-		runtime.GOMAXPROCS(runtime.NumCPU())
+	// Warning the user when working in unrestricted mode
+	if unrestricted {
+		infoLog.Println("Unrestricted is set to true. If you continue, the output might be very long, the memory usage heavy and the program will use all available cores. Press ctrl+c to abort or Enter to continue")
+		fmt.Scanln()
+		maxDepth = 100000
+		maxElements = 100000
+		powerLevel = "a"
 	}
 
 	cfg := &Config{
@@ -90,6 +89,8 @@ func main() {
 		MaxElements:        maxElements,
 		DirHints:           dirHints,
 		PowerLevel:         powerLevel,
+		Unrestricted:       unrestricted,
+		Verbose:            verbose,
 	}
 
 	// Display config if requested
