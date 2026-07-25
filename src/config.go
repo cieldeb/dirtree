@@ -1,104 +1,89 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
+
 package main
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	JsonTree           bool   `mapstructure:"jsonTree"`
-	TxtTree            bool   `mapstructure:"txtTree"`
-	TerminalTree       bool   `mapstructure:"terminalTree"`
-	AnnotateTree       bool   `mapstructure:"annotateTree"`
-	Density            int    `mapstructure:"density"`
-	AnnotationsPadding int    `mapstructure:"annotationsPadding"`
-	FilesFirst         bool   `mapstructure:"filesFirst"`
-	HiddenFiles        bool   `mapstructure:"hiddenFiles"`
-	Alphabetic         bool   `mapstructure:"alphabetic"`
-	TreeSet            int    `mapstructure:"connectorSet"`
-	MaxDepth           int    `mapstructure:"maxDepth"`
-	MaxElements        int    `mapstructure:"maxElements"`
-	DirHints           bool   `mapstructure:"dirHints"`
-	PowerLevel         string `mapstructure:"powerLevel"`
-}
+// LoadConfig loads a named yaml config file from configPath into a new T,
+// creating the file with the given defaults if it doesn't exist yet.
+func LoadConfig[T any](configPath, configName string, defaults map[string]any) (*T, error) {
+	v := viper.New()
+	v.SetConfigName(configName)
+	v.SetConfigType("yaml")
+	v.AddConfigPath(configPath)
+	v.AddConfigPath(".")
 
-func loadConfig(programName, defaultConfig string) (*Config, error) {
-	configPath := getConfigPath(programName)
-	configFile := filepath.Join(configPath, "config.yaml")
-
-	// Create default config if it doesn't exist
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		if err := createDefaultConfig(programName, defaultConfig); err != nil {
-			return nil, fmt.Errorf("error creating default config: %w", err)
-		}
-		infoLog.Printf("Created default config at: %s\n", configFile)
-		infoLog.Println("To edit the configuration, set a flag's value and add the -saveconfig flag")
+	for key, value := range defaults {
+		v.SetDefault(key, value)
 	}
 
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(configPath)
-	viper.AddConfigPath(".")
-
-	viper.SetDefault("jsonTree", false)
-	viper.SetDefault("txtTree", false)
-	viper.SetDefault("terminalTree", true)
-	viper.SetDefault("annotateTree", false)
-	viper.SetDefault("density", 3)
-	viper.SetDefault("annotationsPadding", 3)
-	viper.SetDefault("filesFirst", true)
-	viper.SetDefault("hiddenFiles", false)
-	viper.SetDefault("alphabetic", true)
-	viper.SetDefault("connectorSet", 2)
-	viper.SetDefault("maxDepth", 10)
-	viper.SetDefault("maxElements", 20)
-	viper.SetDefault("dirHints", true)
-	viper.SetDefault("powerLevel", "m")
-
-	if err := viper.ReadInConfig(); err != nil {
+	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("error reading config file: %w", err)
 		}
 	}
 
-	var config Config
-	if err := viper.Unmarshal(&config); err != nil {
+	var cfg T
+	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("error unmarshaling config: %w", err)
 	}
 
-	return &config, nil
+	return &cfg, nil
 }
 
-func saveConfig(config *Config, programName string) error {
-	configPath := getConfigPath(programName)
-	configFile := filepath.Join(configPath, "config.yaml")
+// SaveConfig writes any mapstructure-tagged struct to a yaml config file.
+func SaveConfig(config any, configPath, configName string) error {
+	v := viper.New()
+	v.SetConfigType("yaml")
 
-	viper.Set("jsonTree", config.JsonTree)
-	viper.Set("txtTree", config.TxtTree)
-	viper.Set("terminalTree", config.TerminalTree)
-	viper.Set("annotateTree", config.AnnotateTree)
-	viper.Set("density", config.Density)
-	viper.Set("annotationsPadding", config.AnnotationsPadding)
-	viper.Set("filesFirst", config.FilesFirst)
-	viper.Set("hiddenFiles", config.HiddenFiles)
-	viper.Set("alphabetic", config.Alphabetic)
-	viper.Set("connectorSet", config.TreeSet)
-	viper.Set("maxDepth", config.MaxDepth)
-	viper.Set("maxElements", config.MaxElements)
-	viper.Set("dirHints", config.DirHints)
-	viper.Set("powerLevel", config.PowerLevel)
+	for key, value := range structToMap(config) {
+		v.Set(key, value)
+	}
 
-	if err := viper.WriteConfigAs(configFile); err != nil {
+	if err := os.MkdirAll(configPath, 0755); err != nil {
+		return fmt.Errorf("error creating config directory: %w", err)
+	}
+
+	configFile := filepath.Join(configPath, configName+".yaml")
+	if err := v.WriteConfigAs(configFile); err != nil {
 		return fmt.Errorf("error writing config file: %w", err)
 	}
 
 	return nil
 }
 
+// structToMap flattens a struct's fields into a map keyed by mapstructure tag
+// (falling back to the field name), so callers don't need to enumerate fields.
+func structToMap(cfg any) map[string]any {
+	result := make(map[string]any)
+
+	val := reflect.ValueOf(cfg)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	typ := val.Type()
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		key := field.Tag.Get("mapstructure")
+		if key == "" {
+			key = field.Name
+		}
+		result[key] = val.Field(i).Interface()
+	}
+
+	return result
+}
+
+// getConfigPath resolves the config directory for a given program name,
+// preferring XDG_CONFIG_HOME.
 func getConfigPath(programName string) string {
 	if configHome := os.Getenv("XDG_CONFIG_HOME"); configHome != "" {
 		return filepath.Join(configHome, programName)
@@ -110,16 +95,4 @@ func getConfigPath(programName string) string {
 	}
 
 	return filepath.Join(home, ".config", programName)
-}
-
-func createDefaultConfig(programName, defaultConfig string) error {
-	configPath := getConfigPath(programName)
-
-	if err := os.MkdirAll(configPath, 0755); err != nil {
-		return fmt.Errorf("error creating config directory: %w", err)
-	}
-
-	configFile := filepath.Join(configPath, "config.yaml")
-
-	return os.WriteFile(configFile, []byte(defaultConfig), 0644)
 }

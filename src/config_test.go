@@ -88,7 +88,7 @@ func TestSaveConfig(t *testing.T) {
 		TreeSet:            3,
 	}
 
-	if err := saveConfig(testConfig, testProgramName); err != nil {
+	if err := saveConfig(testConfig, testProgramName, configName); err != nil {
 		t.Fatalf("saveConfig failed: %v", err)
 	}
 
@@ -204,10 +204,6 @@ jsonTree: false
 txtTree: true
 density: 3
 `
-
-	if err := createDefaultConfig(testProgramName, defaultConfig); err != nil {
-		t.Fatalf("createDefaultConfig failed: %v", err)
-	}
 
 	// Verify the config file was created
 	configPath := getConfigPath(testProgramName)
