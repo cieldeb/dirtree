@@ -19,6 +19,7 @@ Dirtree is a command-line utility that generates visual and machine-readable rep
 - Hidden files inclusion/exclusion
 - Depth and element limits to keep large trees readable, with a summary line for anything truncated (e.g. `and 12 files not shown`)
 - Persistent config file so you don't have to repeat flags every run
+- Multiple configurations can be saved side by side
 - Adjustable CPU usage via a `powerLevel` setting for large scans
 
 ## Installation
@@ -57,6 +58,7 @@ dirtree --json --txt myapp   # also write tree.json and tree.txt
 
 | Flag | Default | Description |
 |---|---|---|
+| `-c, --configuration` | Configuration to be used on this run | — |
 | `--terminal` | `true` | Print the tree to the terminal |
 | `--txt` | `false` | Write the tree to `tree.txt` |
 | `--json` | `false` | Write the tree to `tree.json` |
